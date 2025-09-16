@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>レシピ検索</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    input { width: 50px; }
+    .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    h2 { margin-top: 0; }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+
+<h1>順位でレシピを検索</h1>
+
+<label for="rankInput">順位を入力：</label>
+<input type="number" id="rankInput" min="1">
+<button onclick="showRecipe()">検索</button>
+
+<div id="recipeDisplay"></div>
+
+<script>
+async function showRecipe() {
+  const rank = parseInt(document.getElementById('rankInput').value);
+  if (!rank) {
+    alert("順位を入力してください");
+    return;
+  }
+
+  // JSONを読み込む
+  const res = await fetch('recipes.json'); // JSONファイル名を指定
+  const data = await res.json();
+
+  // 該当するレシピを検索
+  const recipe = data.recipes.find(r => r.rank === rank);
+
+  const display = document.getElementById('recipeDisplay');
+  if (!recipe) {
+    display.innerHTML = `<p>順位 ${rank} のレシピは見つかりませんでした。</p>`;
+    return;
+  }
+
+  // レシピ情報を表示
+  display.innerHTML = `
+    <div class="recipe">
+      <h2>${recipe.rank}位: ${recipe.name}</h2>
+      <p><strong>キャッチコピー：</strong>${recipe.catchphrase}</p>
+      <p><strong>調理時間：</strong>${recipe.prep_time}</p>
+      <p><strong>難易度：</strong>${recipe.difficulty}</p>
+      <p><strong>費用：</strong>${recipe.cost}</p>
+      <p><strong>片付けの労力：</strong>${recipe.cleanup_effort}</p>
+      <p><strong>おすすめのタイミング：</strong>${recipe.recommended_timing.join('、')}</p>
+      <h3>材料</h3>
+      <ul>
+        ${recipe.ingredients.map(i => `<li>${i.item}：${i.amount}${i.note ? '（' + i.note + '）' : ''}</li>`).join('')}
+      </ul>
+      <h3>手順</h3>
+      <ol>
+        ${recipe.steps.map(s => `<li>${s}</li>`).join('')}
+      </ol>
+    </div>
+  `;
+}
+</script>
+
+</body>
+</html>
