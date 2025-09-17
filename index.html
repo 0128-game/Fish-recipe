@@ -8,7 +8,8 @@
     input { width: 50px; }
     .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
     h2 { margin-top: 0; }
-    ul { padding-left: 20px; }
+    ul, ol { padding-left: 20px; }
+    .ingredient-note { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
@@ -54,7 +55,7 @@ async function showRecipe() {
       <p><strong>おすすめのタイミング：</strong>${recipe.recommended_timing.join('、')}</p>
       <h3>材料</h3>
       <ul>
-        ${recipe.ingredients.map(i => `<li>${i.item}：${i.amount}${i.note ? '（' + i.note + '）' : ''}</li>`).join('')}
+        ${recipe.ingredients.map(i => `<li>${i.item}：${i.amount}${i.note ? ' <span class="ingredient-note">（' + i.note + '）</span>' : ''}</li>`).join('')}
       </ul>
       <h3>手順</h3>
       <ol>
