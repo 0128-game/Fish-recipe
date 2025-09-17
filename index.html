@@ -31,7 +31,7 @@ async function loadRecipes() {
   try {
     // docs フォルダ内の recipes.json を読み込む
     // index.html から見た相対パス
-    const res = await fetch('./recipes.json'); // index.html と recipes.json は同じ docs 内
+    const res = await fetch('./docs/recipes.json'); // index.html と recipes.json は同じ docs 内
     if (!res.ok) throw new Error("JSONファイルが読み込めません");
     const data = await res.json();
     recipesCache = data.recipes;
