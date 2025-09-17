@@ -23,27 +23,43 @@
 <div id="recipeDisplay"></div>
 
 <script>
+// レシピをキャッシュして一度だけfetchする
+let recipesCache = null;
+
+async function loadRecipes() {
+  if (recipesCache) return recipesCache;
+  try {
+    const res = await fetch('recipes.json');
+    if (!res.ok) throw new Error("JSONファイルが読み込めません");
+    const data = await res.json();
+    recipesCache = data.recipes;
+    return recipesCache;
+  } catch (err) {
+    console.error(err);
+    alert("レシピJSONの読み込みに失敗しました");
+    return [];
+  }
+}
+
 async function showRecipe() {
-  const rank = parseInt(document.getElementById('rankInput').value);
-  if (!rank) {
+  const rankInput = document.getElementById('rankInput').value;
+  if (!rankInput) {
     alert("順位を入力してください");
     return;
   }
 
-  // JSONを読み込む
-  const res = await fetch('recipes.json'); // JSONファイル名を指定
-  const data = await res.json();
+  const rank = parseInt(rankInput, 10);
+  const recipes = await loadRecipes();
 
-  // 該当するレシピを検索
-  const recipe = data.recipes.find(r => r.rank === rank);
+  // rankを数字でも文字列でも一致するように検索
+  const recipe = recipes.find(r => r.rank == rank);
 
   const display = document.getElementById('recipeDisplay');
   if (!recipe) {
-    display.innerHTML = `<p>順位 ${rank} のレシピは見つかりませんでした。</p>`;
+    display.innerHTML = `<p>順位 ${rankInput} のレシピは見つかりませんでした。</p>`;
     return;
   }
 
-  // レシピ情報を表示
   display.innerHTML = `
     <div class="recipe">
       <h2>${recipe.rank}位: ${recipe.name}</h2>
