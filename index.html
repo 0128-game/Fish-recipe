@@ -44,19 +44,19 @@ async function loadRecipes() {
 }
 
 async function showRecipe() {
-  const rankInput = document.getElementById('rankInput').value;
+  let rankInput = document.getElementById('rankInput').value;
   if (!rankInput) {
     alert("順位を入力してください");
     return;
   }
 
-  const rank = parseInt(rankInput, 10);
-  const recipes = await loadRecipes();
+  let rank = parseInt(rankInput, 10);
+  let recipes = await loadRecipes();
 
   // rankを数字でも文字列でも一致するように検索
-  const recipe = recipes.find(r => r.rank == rank);
+  let recipe = recipes.find(r => r.rank == rank);
 
-  const display = document.getElementById('recipeDisplay');
+  let display = document.getElementById('recipeDisplay');
   if (!recipe) {
     display.innerHTML = `<p>順位 ${rankInput} のレシピは見つかりませんでした。</p>`;
     return;
