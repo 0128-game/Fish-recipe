@@ -29,7 +29,8 @@ let recipesCache = null;
 async function loadRecipes() {
   if (recipesCache) return recipesCache;
   try {
-    const res = await fetch('recipes.json');
+    // docs フォルダ内の recipes.json を読み込む
+    const res = await fetch('./docs/recipes.json');
     if (!res.ok) throw new Error("JSONファイルが読み込めません");
     const data = await res.json();
     recipesCache = data.recipes;
