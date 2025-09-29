@@ -1,52 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>レシピ検索</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    input { width: 60px; padding: 5px; margin-left: 5px; }
+    button { padding: 5px 10px; }
+    .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    h2 { margin-top: 0; }
+    ul, ol { padding-left: 20px; }
+    .ingredient-note { font-size: 0.9em; color: #555; }
+  </style>
+</head>
+<body>
+
+<h1>順位でレシピを検索</h1>
+
+<label for="rankInput">順位を入力：</label>
+<input type="number" id="rankInput" min="1">
+<button onclick="showRecipe()">検索</button>
+
+<div id="recipeDisplay"></div>
+
+<script>
+let recipesCache = null;
+
+// JSONファイルを読み込む
 async function loadRecipes() {
-    try {
-        const response = await fetch('docs/recipes.json');
-        if (!response.ok) {
-            throw new Error('JSONファイルが読み込めません');
-        }
-        const data = await response.json();
-        console.log("✅ JSON読み込み成功:", data);
+  if (recipesCache) return recipesCache;
+  try {
+    // docsフォルダ内のrecipes.jsonをfetch
+    const res = await fetch('./docs/recipes.json');
+    if (!res.ok) throw new Error("JSONファイルが読み込めません");
+    const data = await res.json();
 
-        // 配列形式かオブジェクト形式かを判定
-        const recipes = Array.isArray(data) ? data : data.recipes;
-        console.log("📂 recipes配列:", recipes);
+    console.log("✅ JSON読み込み成功:", data);
 
-        return recipes;
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
+    // JSON構造が { "recipes": [...] } の場合
+    recipesCache = data.recipes || data;
+    return recipesCache;
+  } catch (err) {
+    console.error(err);
+    alert("レシピJSONの読み込みに失敗しました");
+    return [];
+  }
 }
 
+// 順位を入力して検索
 async function showRecipe() {
-    const rankInput = document.getElementById('rankInput').value.trim();
-    console.log("🎯 入力された値:", rankInput);
+  const rankInput = document.getElementById('rankInput').value.trim();
+  if (!rankInput) {
+    alert("順位を入力してください");
+    return;
+  }
 
-    if (!rankInput) {
-        alert("順位を入力してください");
-        return;
-    }
+  const rankNumber = parseInt(rankInput, 10);
+  const recipes = await loadRecipes();
 
-    const recipes = await loadRecipes();
-    console.log("🔍 検索対象rank:", rankInput, " recipes配列:", recipes);
+  console.log("🔍 検索対象rank:", rankNumber);
+  console.log("📂 recipes配列:", recipes);
 
-    const rankNumber = parseInt(rankInput, 10);
+  // 各レシピの中身を確認
+  recipes.forEach((r, i) => {
+    console.log(`Index ${i}: rank=${r.rank}, name=${r.name}`);
+  });
 
-    // rankが数値型か文字列型かに対応
-    const recipe = recipes.find(r => parseInt(r.rank, 10) === rankNumber);
+  // rankが文字列でも比較できるようにする
+  const recipe = recipes.find(r => String(r.rank) === String(rankNumber));
 
-    if (!recipe) {
-        alert("該当するレシピが見つかりません");
-        return;
-    }
+  const display = document.getElementById('recipeDisplay');
 
-    console.log(`🎉 見つかったレシピ: rank=${recipe.rank}, name=${recipe.name}`);
+  if (!recipe) {
+    console.warn(`❌ 該当するレシピが見つかりません: rank=${rankNumber}`);
+    display.innerHTML = `<p>順位 ${rankNumber} のレシピは見つかりませんでした。</p>`;
+    return;
+  }
 
-    document.getElementById('recipeDisplay').innerHTML = `
-        <h2>${recipe.name}</h2>
-        <p>${recipe.description}</p>
-        <ul>
-            ${recipe.ingredients.map(ing => `<li>${ing}</li>`).join('')}
-        </ul>
-    `;
+  console.log(`🎉 見つかったレシピ: rank=${recipe.rank}, name=${recipe.name}`);
+
+  // HTML出力
+  display.innerHTML = `
+    <div class="recipe">
+      <h2>${recipe.rank}位: ${recipe.name}</h2>
+      <p><strong>キャッチコピー：</strong>${recipe.catchphrase || 'なし'}</p>
+      <p><strong>調理時間：</strong>${recipe.prep_time || '不明'}</p>
+      <p><strong>難易度：</strong>${recipe.difficulty || '不明'}</p>
+      <p><strong>費用：</strong>${recipe.cost || '不明'}</p>
+      <p><strong>片付けの労力：</strong>${recipe.cleanup_effort || '不明'}</p>
+      <p><strong>おすすめのタイミング：</strong>
+        ${(recipe.recommended_timing || []).join('、')}
+      </p>
+      <h3>材料</h3>
+      <ul>
+        ${(recipe.ingredients || []).map(i => `
+          <li>${i.item}：${i.amount}
+          ${i.note ? '<span class="ingredient-note">（' + i.note + '）</span>' : ''}
+          </li>
+        `).join('')}
+      </ul>
+      <h3>手順</h3>
+      <ol>
+        ${(recipe.steps || []).map(s => `<li>${s}</li>`).join('')}
+      </ol>
+    </div>
+  `;
 }
+</script>
+
+</body>
+</html>
