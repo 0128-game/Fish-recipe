@@ -2,114 +2,114 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>魚料理検索</title>
+  <title>魚介類レシピ検索</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #f5f5f5;
+      background-color: #f9f9f9;
     }
     h1 {
-      color: #333;
+      text-align: center;
     }
-    .search-box {
-      margin-bottom: 20px;
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
     }
     input[type="number"] {
       padding: 5px;
-      font-size: 16px;
-      width: 100px;
+      width: 100%;
+      box-sizing: border-box;
     }
     button {
-      padding: 6px 12px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #result {
-      background: white;
-      border: 1px solid #ccc;
-      padding: 15px;
-      border-radius: 5px;
-      max-width: 400px;
-    }
-    .recipe-title {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .recipe-caption {
-      color: #555;
-      margin-bottom: 15px;
-    }
-    .section-title {
       margin-top: 10px;
-      font-weight: bold;
-      border-bottom: 1px solid #ccc;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
     }
-    ul, ol {
-      padding-left: 20px;
+    button:hover {
+      background-color: #45a049;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+    .result h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .info-item {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
-  <h1>魚料理検索</h1>
-
-  <!-- 検索フォーム -->
-  <div class="search-box">
-    <label for="rankInput">検索するRank番号:</label>
+  <h1>魚介類レシピ検索</h1>
+  <div class="container">
+    <label for="rankInput">順位を入力してください:</label>
     <input type="number" id="rankInput" placeholder="例: 1">
     <button onclick="searchRecipe()">検索</button>
+    <div id="result" class="result"></div>
   </div>
 
-  <!-- 結果表示エリア -->
-  <div id="result">ここに結果が表示されます</div>
-
   <script>
-    // JSONデータ（本来は外部からfetchで読み込み）
-    const jsonData = {
-      "recipes": [
-        {
-          "Rank": 1,
-          "タイトル": "シーフードミックス炒め",
-          "キャッチコピー": "冷凍シーフードで簡単海の幸パーティー！",
-          "材料": ["シーフードミックス 200g", "塩 少々"],
-          "手順": ["炒める", "味付けする"]
-        },
-        {
-          "Rank": 2,
-          "タイトル": "サバの味噌煮",
-          "キャッチコピー": "青魚の脂と味噌がしみ込むごちそう！",
-          "材料": ["サバ 1尾", "水 150ml"],
-          "手順": ["煮る", "味噌を入れる"]
+    let recipes = [];
+
+    // JSON読み込み
+    fetch('docs/recipes.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('JSONファイルを読み込めませんでした');
         }
-      ]
-    };
+        return response.json();
+      })
+      .then(data => {
+        recipes = data;
+        console.log('JSON loaded:', recipes); // 確認用
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('result').innerHTML = `<p style="color:red;">データ読み込みに失敗しました</p>`;
+      });
 
-    console.log("JSON読み込み成功:", jsonData);
-
-    const recipes = jsonData.recipes;
-
-    // 検索処理
+    // 検索関数
     function searchRecipe() {
-      const searchRank = parseInt(document.getElementById("rankInput").value);
-      console.log("検索対象rank:", searchRank, " recipes配列:", recipes);
+      const rank = parseInt(document.getElementById('rankInput').value, 10);
 
-      const target = recipes.find(r => r["Rank"] === searchRank);
+      if (isNaN(rank)) {
+        document.getElementById('result').innerHTML = `<p style="color:red;">数字を入力してください。</p>`;
+        return;
+      }
 
-      const resultDiv = document.getElementById("result");
-      if (target) {
-        resultDiv.innerHTML = `
-          <div class="recipe-title">${target["タイトル"]}</div>
-          <div class="recipe-caption">${target["キャッチコピー"]}</div>
-          
-          <div class="section-title">材料</div>
-          <ul>${target["材料"].map(item => `<li>${item}</li>`).join("")}</ul>
+      // rankが一致するレシピを検索
+      const recipe = recipes.find(item => item.rank === rank);
 
-          <div class="section-title">手順</div>
-          <ol>${target["手順"].map(step => `<li>${step}</li>`).join("")}</ol>
+      if (recipe) {
+        document.getElementById('result').innerHTML = `
+          <h2>${recipe.name}</h2>
+          <div class="info-item"><strong>下処理:</strong> ${recipe.prep}</div>
+          <div class="info-item"><strong>難易度:</strong> ${recipe.difficulty}</div>
+          <div class="info-item"><strong>費用:</strong> ${recipe.cost}</div>
+          <div class="info-item"><strong>おすすめのタイミング:</strong> ${recipe.recommended_timing}</div>
+          <div class="info-item"><strong>メモ:</strong> ${recipe.memo}</div>
         `;
       } else {
-        resultDiv.innerHTML = `<p>該当するレシピが見つかりません。</p>`;
+        document.getElementById('result').innerHTML = `<p style="color:red;">その順位のレシピは見つかりません。</p>`;
       }
     }
   </script>
