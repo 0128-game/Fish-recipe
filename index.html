@@ -2,14 +2,70 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Fish Recipe</title>
+  <title>魚料理検索</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    .search-box {
+      margin-bottom: 20px;
+    }
+    input[type="number"] {
+      padding: 5px;
+      font-size: 16px;
+      width: 100px;
+    }
+    button {
+      padding: 6px 12px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #result {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 5px;
+      max-width: 400px;
+    }
+    .recipe-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .recipe-caption {
+      color: #555;
+      margin-bottom: 15px;
+    }
+    .section-title {
+      margin-top: 10px;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+    }
+    ul {
+      padding-left: 20px;
+    }
+  </style>
 </head>
 <body>
   <h1>魚料理検索</h1>
-  <div id="result"></div>
+
+  <!-- 検索フォーム -->
+  <div class="search-box">
+    <label for="rankInput">検索するRank番号:</label>
+    <input type="number" id="rankInput" placeholder="例: 1">
+    <button onclick="searchRecipe()">検索</button>
+  </div>
+
+  <!-- 結果表示エリア -->
+  <div id="result">ここに結果が表示されます</div>
 
   <script>
-    // 仮のJSONデータ
+    // ======= 仮のJSONデータ =======
     const jsonData = {
       "recipes": [
         {
@@ -32,24 +88,36 @@
     console.log("JSON読み込み成功:", jsonData);
 
     const recipes = jsonData.recipes;
-    const searchRank = 1;
-    console.log("検索対象rank:", searchRank, " recipes配列:", recipes);
 
-    // Rankとタイトルを正しく表示
+    // ======= 検索処理 =======
+    function searchRecipe() {
+      const searchRank = parseInt(document.getElementById("rankInput").value);
+      console.log("検索対象rank:", searchRank, " recipes配列:", recipes);
+
+      const target = recipes.find(r => r["Rank"] === searchRank);
+
+      const resultDiv = document.getElementById("result");
+      if (target) {
+        // 結果をHTMLに出力
+        resultDiv.innerHTML = `
+          <div class="recipe-title">${target["タイトル"]}</div>
+          <div class="recipe-caption">${target["キャッチコピー"]}</div>
+          
+          <div class="section-title">材料</div>
+          <ul>${target["材料"].map(item => `<li>${item}</li>`).join("")}</ul>
+
+          <div class="section-title">手順</div>
+          <ol>${target["手順"].map(step => `<li>${step}</li>`).join("")}</ol>
+        `;
+      } else {
+        resultDiv.innerHTML = `<p>該当するレシピが見つかりません。</p>`;
+      }
+    }
+
+    // ======= 初期表示（全件表示） =======
     recipes.forEach(recipe => {
       console.log("rank=" + recipe["Rank"] + ", name=" + recipe["タイトル"]);
     });
-
-    // Rank=1のレシピを検索
-    const target = recipes.find(r => r["Rank"] === searchRank);
-    if (target) {
-      document.getElementById("result").innerHTML = `
-        <h2>${target["タイトル"]}</h2>
-        <p>${target["キャッチコピー"]}</p>
-      `;
-    } else {
-      document.getElementById("result").innerHTML = `<p>該当するレシピが見つかりません。</p>`;
-    }
   </script>
 </body>
 </html>
