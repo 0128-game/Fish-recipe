@@ -2,111 +2,54 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>レシピ検索</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    input { width: 60px; padding: 5px; margin-left: 5px; }
-    button { padding: 5px 10px; }
-    .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-    h2 { margin-top: 0; }
-    ul, ol { padding-left: 20px; }
-    .ingredient-note { font-size: 0.9em; color: #555; }
-  </style>
+  <title>Fish Recipe</title>
 </head>
 <body>
+  <h1>魚料理検索</h1>
+  <div id="result"></div>
 
-<h1>順位でレシピを検索</h1>
+  <script>
+    // 仮のJSONデータ
+    const jsonData = {
+      "recipes": [
+        {
+          "Rank": 1,
+          "タイトル": "シーフードミックス炒め",
+          "キャッチコピー": "冷凍シーフードで簡単海の幸パーティー！",
+          "材料": ["シーフードミックス 200g", "塩 少々"],
+          "手順": ["炒める", "味付けする"]
+        },
+        {
+          "Rank": 2,
+          "タイトル": "サバの味噌煮",
+          "キャッチコピー": "青魚の脂と味噌がしみ込むごちそう！",
+          "材料": ["サバ 1尾", "水 150ml"],
+          "手順": ["煮る", "味噌を入れる"]
+        }
+      ]
+    };
 
-<label for="rankInput">順位を入力：</label>
-<input type="number" id="rankInput" min="1">
-<button onclick="showRecipe()">検索</button>
+    console.log("JSON読み込み成功:", jsonData);
 
-<div id="recipeDisplay"></div>
+    const recipes = jsonData.recipes;
+    const searchRank = 1;
+    console.log("検索対象rank:", searchRank, " recipes配列:", recipes);
 
-<script>
-let recipesCache = null;
+    // Rankとタイトルを正しく表示
+    recipes.forEach(recipe => {
+      console.log("rank=" + recipe["Rank"] + ", name=" + recipe["タイトル"]);
+    });
 
-// JSONファイルを読み込む
-async function loadRecipes() {
-  if (recipesCache) return recipesCache;
-  try {
-    // docsフォルダ内のrecipes.jsonをfetch
-    const res = await fetch('./docs/recipes.json');
-    if (!res.ok) throw new Error("JSONファイルが読み込めません");
-    const data = await res.json();
-
-    console.log("✅ JSON読み込み成功:", data);
-
-    // JSON構造が { "recipes": [...] } の場合
-    recipesCache = data.recipes || data;
-    return recipesCache;
-  } catch (err) {
-    console.error(err);
-    alert("レシピJSONの読み込みに失敗しました");
-    return [];
-  }
-}
-
-// 順位を入力して検索
-async function showRecipe() {
-  const rankInput = document.getElementById('rankInput').value.trim();
-  if (!rankInput) {
-    alert("順位を入力してください");
-    return;
-  }
-
-  const rankNumber = parseInt(rankInput, 10);
-  const recipes = await loadRecipes();
-
-  console.log("🔍 検索対象rank:", rankNumber);
-  console.log("📂 recipes配列:", recipes);
-
-  // 各レシピの中身を確認
-  recipes.forEach((r, i) => {
-    console.log(`Index ${i}: rank=${r.rank}, name=${r.name}`);
-  });
-
-  // rankが文字列でも比較できるようにする
-  const recipe = recipes.find(r => String(r.rank) === String(rankNumber));
-
-  const display = document.getElementById('recipeDisplay');
-
-  if (!recipe) {
-    console.warn(`❌ 該当するレシピが見つかりません: rank=${rankNumber}`);
-    display.innerHTML = `<p>順位 ${rankNumber} のレシピは見つかりませんでした。</p>`;
-    return;
-  }
-
-  console.log(`🎉 見つかったレシピ: rank=${recipe.rank}, name=${recipe.name}`);
-
-  // HTML出力
-  display.innerHTML = `
-    <div class="recipe">
-      <h2>${recipe.rank}位: ${recipe.name}</h2>
-      <p><strong>キャッチコピー：</strong>${recipe.catchphrase || 'なし'}</p>
-      <p><strong>調理時間：</strong>${recipe.prep_time || '不明'}</p>
-      <p><strong>難易度：</strong>${recipe.difficulty || '不明'}</p>
-      <p><strong>費用：</strong>${recipe.cost || '不明'}</p>
-      <p><strong>片付けの労力：</strong>${recipe.cleanup_effort || '不明'}</p>
-      <p><strong>おすすめのタイミング：</strong>
-        ${(recipe.recommended_timing || []).join('、')}
-      </p>
-      <h3>材料</h3>
-      <ul>
-        ${(recipe.ingredients || []).map(i => `
-          <li>${i.item}：${i.amount}
-          ${i.note ? '<span class="ingredient-note">（' + i.note + '）</span>' : ''}
-          </li>
-        `).join('')}
-      </ul>
-      <h3>手順</h3>
-      <ol>
-        ${(recipe.steps || []).map(s => `<li>${s}</li>`).join('')}
-      </ol>
-    </div>
-  `;
-}
-</script>
-
+    // Rank=1のレシピを検索
+    const target = recipes.find(r => r["Rank"] === searchRank);
+    if (target) {
+      document.getElementById("result").innerHTML = `
+        <h2>${target["タイトル"]}</h2>
+        <p>${target["キャッチコピー"]}</p>
+      `;
+    } else {
+      document.getElementById("result").innerHTML = `<p>該当するレシピが見つかりません。</p>`;
+    }
+  </script>
 </body>
 </html>
