@@ -1,12 +1,16 @@
 async function loadRecipes() {
     try {
-        // JSONファイルを読み込み
         const response = await fetch('docs/recipes.json');
         if (!response.ok) {
             throw new Error('JSONファイルが読み込めません');
         }
-        const recipes = await response.json();
-        console.log("✅ JSON読み込み成功:", recipes); // 確認用
+        const data = await response.json();
+        console.log("✅ JSON読み込み成功:", data);
+
+        // 配列形式かオブジェクト形式かを判定
+        const recipes = Array.isArray(data) ? data : data.recipes;
+        console.log("📂 recipes配列:", recipes);
+
         return recipes;
     } catch (error) {
         console.error(error);
@@ -14,11 +18,9 @@ async function loadRecipes() {
     }
 }
 
-// rank入力からレシピを表示
 async function showRecipe() {
     const rankInput = document.getElementById('rankInput').value.trim();
-
-    console.log("🎯 入力された値:", rankInput); // 入力確認
+    console.log("🎯 入力された値:", rankInput);
 
     if (!rankInput) {
         alert("順位を入力してください");
@@ -26,21 +28,20 @@ async function showRecipe() {
     }
 
     const recipes = await loadRecipes();
+    console.log("🔍 検索対象rank:", rankInput, " recipes配列:", recipes);
 
-    // JSONのrankは数値かもしれないので型を合わせる
     const rankNumber = parseInt(rankInput, 10);
 
-    // rankでフィルタ
+    // rankが数値型か文字列型かに対応
     const recipe = recipes.find(r => parseInt(r.rank, 10) === rankNumber);
-
-    console.log("🔍 検索結果:", recipe); // 結果確認
 
     if (!recipe) {
         alert("該当するレシピが見つかりません");
         return;
     }
 
-    // レシピ表示
+    console.log(`🎉 見つかったレシピ: rank=${recipe.rank}, name=${recipe.name}`);
+
     document.getElementById('recipeDisplay').innerHTML = `
         <h2>${recipe.name}</h2>
         <p>${recipe.description}</p>
@@ -49,5 +50,3 @@ async function showRecipe() {
         </ul>
     `;
 }
-
-document.getElementById('searchButton').addEventListener('click', showRecipe);
