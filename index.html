@@ -1,98 +1,53 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>レシピ検索</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    input { width: 50px; }
-    button { margin-left: 5px; }
-    .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-    h2 { margin-top: 0; }
-    ul, ol { padding-left: 20px; }
-    .ingredient-note { font-size: 0.9em; color: #555; }
-  </style>
-</head>
-<body>
-
-<h1>順位でレシピを検索</h1>
-
-<label for="rankInput">順位を入力：</label>
-<input type="number" id="rankInput" min="1">
-<button onclick="showRecipe()">検索</button>
-
-<div id="recipeDisplay"></div>
-
-<script>
-let recipesCache = null;
-
 async function loadRecipes() {
-  if (recipesCache) return recipesCache;
-
-  try {
-    const res = await fetch('./docs/recipes.json'); // docs 内のJSONを読み込み
-    if (!res.ok) throw new Error("JSONファイルが読み込めません");
-    const data = await res.json();
-    console.log("JSON読み込み成功:", data); // JSON全体を確認
-    recipesCache = data.recipes;
-    return recipesCache;
-  } catch (err) {
-    console.error(err);
-    alert("レシピJSONの読み込みに失敗しました");
-    return [];
-  }
+    try {
+        // JSONファイルを読み込み
+        const response = await fetch('docs/recipes.json');
+        if (!response.ok) {
+            throw new Error('JSONファイルが読み込めません');
+        }
+        const recipes = await response.json();
+        console.log("✅ JSON読み込み成功:", recipes); // 確認用
+        return recipes;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
 }
 
+// rank入力からレシピを表示
 async function showRecipe() {
-  const rankInput = document.getElementById('rankInput').value;
-  if (!rankInput) {
-    alert("順位を入力してください");
-    return;
-  }
+    const rankInput = document.getElementById('rankInput').value.trim();
 
-  const rank = parseInt(rankInput, 10);
-  const recipes = await loadRecipes();
+    console.log("🎯 入力された値:", rankInput); // 入力確認
 
-  // デバッグ：recipesの中身とrankを確認
-  console.log("検索対象rank:", rank, " recipes配列:", recipes);
+    if (!rankInput) {
+        alert("順位を入力してください");
+        return;
+    }
 
-  // 実際に全データをループして確認
-  recipes.forEach(r => console.log(`rank=${r.rank}, name=${r.name}`));
+    const recipes = await loadRecipes();
 
-  // rankを検索（型を合わせて厳密比較）
-  const recipe = recipes.find(r => Number(r.rank) === rank);
+    // JSONのrankは数値かもしれないので型を合わせる
+    const rankNumber = parseInt(rankInput, 10);
 
-  const display = document.getElementById('recipeDisplay');
-  if (!recipe) {
-    display.innerHTML = `<p>順位 ${rankInput} のレシピは見つかりませんでした。</p>`;
-    return;
-  }
+    // rankでフィルタ
+    const recipe = recipes.find(r => parseInt(r.rank, 10) === rankNumber);
 
-  display.innerHTML = `
-    <div class="recipe">
-      <h2>${recipe.rank}位: ${recipe.name}</h2>
-      <p><strong>キャッチコピー：</strong>${recipe.catchphrase}</p>
-      <p><strong>調理時間：</strong>${recipe.prep_time}</p>
-      <p><strong>難易度：</strong>${recipe.difficulty}</p>
-      <p><strong>費用：</strong>${recipe.cost}</p>
-      <p><strong>片付けの労力：</strong>${recipe.cleanup_effort}</p>
-      <p><strong>おすすめのタイミング：</strong>${recipe.recommended_timing.join('、')}</p>
+    console.log("🔍 検索結果:", recipe); // 結果確認
 
-      <h3>材料</h3>
-      <ul>
-        ${recipe.ingredients.map(i =>
-          `<li>${i.item}：${i.amount}${i.note ? ' <span class="ingredient-note">（' + i.note + '）</span>' : ''}</li>`
-        ).join('')}
-      </ul>
+    if (!recipe) {
+        alert("該当するレシピが見つかりません");
+        return;
+    }
 
-      <h3>手順</h3>
-      <ol>
-        ${recipe.steps.map(s => `<li>${s}</li>`).join('')}
-      </ol>
-    </div>
-  `;
+    // レシピ表示
+    document.getElementById('recipeDisplay').innerHTML = `
+        <h2>${recipe.name}</h2>
+        <p>${recipe.description}</p>
+        <ul>
+            ${recipe.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+        </ul>
+    `;
 }
-</script>
 
-</body>
-</html>
+document.getElementById('searchButton').addEventListener('click', showRecipe);
