@@ -6,6 +6,7 @@
   <style>
     body { font-family: sans-serif; margin: 20px; }
     input { width: 50px; }
+    button { margin-left: 5px; }
     .recipe { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
     h2 { margin-top: 0; }
     ul, ol { padding-left: 20px; }
@@ -23,17 +24,16 @@
 <div id="recipeDisplay"></div>
 
 <script>
-// レシピをキャッシュして一度だけfetchする
 let recipesCache = null;
 
 async function loadRecipes() {
   if (recipesCache) return recipesCache;
+
   try {
-    // docs フォルダ内の recipes.json を読み込む
-    // index.html から見た相対パス
-    const res = await fetch('./docs/recipes.json'); // index.html と recipes.json は同じ docs 内
+    const res = await fetch('./docs/recipes.json'); // docs 内のJSONを読み込み
     if (!res.ok) throw new Error("JSONファイルが読み込めません");
     const data = await res.json();
+    console.log("JSON読み込み成功:", data); // JSON全体を確認
     recipesCache = data.recipes;
     return recipesCache;
   } catch (err) {
@@ -44,19 +44,25 @@ async function loadRecipes() {
 }
 
 async function showRecipe() {
-  let rankInput = document.getElementById('rankInput').value;
+  const rankInput = document.getElementById('rankInput').value;
   if (!rankInput) {
     alert("順位を入力してください");
     return;
   }
 
-  let rank = parseInt(rankInput, 10);
-  let recipes = await loadRecipes();
+  const rank = parseInt(rankInput, 10);
+  const recipes = await loadRecipes();
 
-  // rankを数字でも文字列でも一致するように検索
-  let recipe = recipes.find(r => r.rank == rank);
+  // デバッグ：recipesの中身とrankを確認
+  console.log("検索対象rank:", rank, " recipes配列:", recipes);
 
-  let display = document.getElementById('recipeDisplay');
+  // 実際に全データをループして確認
+  recipes.forEach(r => console.log(`rank=${r.rank}, name=${r.name}`));
+
+  // rankを検索（型を合わせて厳密比較）
+  const recipe = recipes.find(r => Number(r.rank) === rank);
+
+  const display = document.getElementById('recipeDisplay');
   if (!recipe) {
     display.innerHTML = `<p>順位 ${rankInput} のレシピは見つかりませんでした。</p>`;
     return;
@@ -71,10 +77,14 @@ async function showRecipe() {
       <p><strong>費用：</strong>${recipe.cost}</p>
       <p><strong>片付けの労力：</strong>${recipe.cleanup_effort}</p>
       <p><strong>おすすめのタイミング：</strong>${recipe.recommended_timing.join('、')}</p>
+
       <h3>材料</h3>
       <ul>
-        ${recipe.ingredients.map(i => `<li>${i.item}：${i.amount}${i.note ? ' <span class="ingredient-note">（' + i.note + '）</span>' : ''}</li>`).join('')}
+        ${recipe.ingredients.map(i =>
+          `<li>${i.item}：${i.amount}${i.note ? ' <span class="ingredient-note">（' + i.note + '）</span>' : ''}</li>`
+        ).join('')}
       </ul>
+
       <h3>手順</h3>
       <ol>
         ${recipe.steps.map(s => `<li>${s}</li>`).join('')}
