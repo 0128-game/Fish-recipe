@@ -1,43 +1,20 @@
-{
-  "recipes": [
-    {
-      "rank": 1,
-      "name": "サーモン焼き",
-      "catchphrase": "シンプルで美味しい！",
-      "prep_time": "15分",
-      "difficulty": "簡単",
-      "cost": "500円程度",
-      "cleanup_effort": "少ない",
-      "recommended_timing": ["昼食", "夕食"],
-      "ingredients": [
-        { "item": "サーモン切り身", "amount": "2切れ" },
-        { "item": "塩", "amount": "少々", "note": "下味用" }
-      ],
-      "steps": [
-        "サーモンに塩をふり5分ほど置く",
-        "フライパンで焼き色がつくまで焼く",
-        "器に盛り付けて完成"
-      ]
-    },
-    {
-      "rank": 2,
-      "name": "タコの唐揚げ",
-      "catchphrase": "ビールのお供に最高！",
-      "prep_time": "20分",
-      "difficulty": "普通",
-      "cost": "700円程度",
-      "cleanup_effort": "中くらい",
-      "recommended_timing": ["夕食", "パーティー"],
-      "ingredients": [
-        { "item": "タコ", "amount": "200g" },
-        { "item": "片栗粉", "amount": "大さじ3" },
-        { "item": "揚げ油", "amount": "適量" }
-      ],
-      "steps": [
-        "タコを一口大に切る",
-        "片栗粉をまぶす",
-        "油で揚げる"
-      ]
-    }
-  ]
-}
+[
+  {
+    "rank": 1,
+    "name": "アジの塩焼き",
+    "prep": "うろこを取り、内臓を出して洗う",
+    "difficulty": "簡単",
+    "cost": "安い",
+    "recommended_timing": "夕食",
+    "memo": "定番の焼き魚"
+  },
+  {
+    "rank": 2,
+    "name": "サーモンムニエル",
+    "prep": "骨を取り除き、塩をふって水分を拭き取る",
+    "difficulty": "中級",
+    "cost": "やや高い",
+    "recommended_timing": "ディナー",
+    "memo": "レモンソースが合う"
+  }
+]
