@@ -56,6 +56,19 @@
     .info-item {
       margin: 5px 0;
     }
+    .recipe-section {
+      margin-top: 15px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .recipe-section h3 {
+      margin-top: 0;
+    }
+    ul {
+      padding-left: 20px;
+    }
   </style>
 </head>
 <body>
@@ -73,14 +86,12 @@
     // JSON読み込み
     fetch('docs/recipes.json')
       .then(response => {
-        if (!response.ok) {
-          throw new Error('JSONファイルを読み込めませんでした');
-        }
+        if (!response.ok) throw new Error('JSONファイルを読み込めませんでした');
         return response.json();
       })
       .then(data => {
         recipes = data;
-        console.log('JSON loaded:', recipes); // 確認用
+        console.log('JSON loaded:', recipes);
       })
       .catch(error => {
         console.error('Error:', error);
@@ -96,17 +107,27 @@
         return;
       }
 
-      // rankが一致するレシピを検索
       const recipe = recipes.find(item => item.rank === rank);
 
       if (recipe) {
         document.getElementById('result').innerHTML = `
           <h2>${recipe.name}</h2>
+          <div class="info-item"><strong>キャッチフレーズ:</strong> ${recipe.catchphrase}</div>
           <div class="info-item"><strong>下処理:</strong> ${recipe.prep}</div>
           <div class="info-item"><strong>難易度:</strong> ${recipe.difficulty}</div>
           <div class="info-item"><strong>費用:</strong> ${recipe.cost}</div>
           <div class="info-item"><strong>おすすめのタイミング:</strong> ${recipe.recommended_timing}</div>
           <div class="info-item"><strong>メモ:</strong> ${recipe.memo}</div>
+          <div class="recipe-section">
+            <h3>材料</h3>
+            <ul>
+              ${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="recipe-section">
+            <h3>レシピ</h3>
+            <p>${recipe.recipe}</p>
+          </div>
         `;
       } else {
         document.getElementById('result').innerHTML = `<p style="color:red;">その順位のレシピは見つかりません。</p>`;
