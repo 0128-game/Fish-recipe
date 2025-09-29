@@ -46,7 +46,7 @@
       font-weight: bold;
       border-bottom: 1px solid #ccc;
     }
-    ul {
+    ul, ol {
       padding-left: 20px;
     }
   </style>
@@ -65,7 +65,7 @@
   <div id="result">ここに結果が表示されます</div>
 
   <script>
-    // ======= 仮のJSONデータ =======
+    // JSONデータ（本来は外部からfetchで読み込み）
     const jsonData = {
       "recipes": [
         {
@@ -89,7 +89,7 @@
 
     const recipes = jsonData.recipes;
 
-    // ======= 検索処理 =======
+    // 検索処理
     function searchRecipe() {
       const searchRank = parseInt(document.getElementById("rankInput").value);
       console.log("検索対象rank:", searchRank, " recipes配列:", recipes);
@@ -98,7 +98,6 @@
 
       const resultDiv = document.getElementById("result");
       if (target) {
-        // 結果をHTMLに出力
         resultDiv.innerHTML = `
           <div class="recipe-title">${target["タイトル"]}</div>
           <div class="recipe-caption">${target["キャッチコピー"]}</div>
@@ -113,11 +112,6 @@
         resultDiv.innerHTML = `<p>該当するレシピが見つかりません。</p>`;
       }
     }
-
-    // ======= 初期表示（全件表示） =======
-    recipes.forEach(recipe => {
-      console.log("rank=" + recipe["Rank"] + ", name=" + recipe["タイトル"]);
-    });
   </script>
 </body>
 </html>
