@@ -43,7 +43,7 @@
         <th>flavortxt</th>
         <th>title</th>
         <th>type</th>
-        <th>pictures</th><!-- 👈 追加した列 -->
+        <th>pictures</th><!-- 追加 -->
         <th>fish-name</th>
         <th>feature</th>
         <th>season</th>
@@ -65,9 +65,7 @@
     async function loadRecipes() {
       try {
         const response = await fetch('./docs/recipes.json', { cache: 'no-cache' });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
 
         const tableBody = document.querySelector('#recipe-table tbody');
@@ -80,7 +78,7 @@
             item.flavortxt ?? '',
             item.title ?? '',
             item.type ?? '',
-            '', // 👈 pictures列（空欄）
+            '', // 👈 pictures 列は空欄
             (item["fish-name"] || []).join(', '),
             (item.feature || []).join(', '),
             (item.season || []).join(', '),
@@ -103,8 +101,11 @@
           return tr;
         }
 
-        const allItems = [...(data.recipes || []), ...(data.preparations || [])];
-        allItems.forEach(item => {
+        // recipes と preparations の両方を表示
+        Object.values(data.recipes || {}).forEach(item => {
+          tableBody.appendChild(createRow(item));
+        });
+        Object.values(data.preparations || {}).forEach(item => {
           tableBody.appendChild(createRow(item));
         });
 
