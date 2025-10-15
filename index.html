@@ -177,107 +177,392 @@
  </div>
 
 <script>
-(async function(){
-  const tryPaths = ['docs/recipes.json','./docs/recipes.json','/recipes.json','./recipes.json'];
-  const tbody = document.getElementById('tbody');
-  const qInput = document.getElementById('q');
-  const filterType = document.getElementById('filterType');
-  const sortBy = document.getElementById('sortBy');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const message = document.getElementById('message');
-  let rawData=null, flatList=[];
+/*
+  expectations:
+   - JSON is an object with keys: "recipes" and "preparations"
+   - We'll attempt several common paths to find the JSON on GitHub Pages.
+   - Defensive coding: many fields may be missing; we'll fallback to sensible defaults.
+*/
 
-  function elText(tag,text,cls){
-    const e=document.createElement(tag); if(cls)e.className=cls;
-    e.textContent=text||''; return e;
-  }
+(function(){
+  const tryPaths = [
+    'docs/recipes.json',
+    './docs/recipes.json',
+    '/recipes.json',
+    './recipes.json'
+  ];
 
-  async function fetchAny(paths){
-    for(const p of paths){
-      try{const r=await fetch(p,{cache:"no-store"}); if(r.ok)return await r.json();}catch(e){console.warn(e);}
-    } throw new Error('recipes.json を見つけられません');
-  }
+  const app = document.getElementById('app');
+  const tbody = document.getElementById('tbody');
+  const qInput = document.getElementById('q');
+  const filterType = document.getElementById('filterType');
+  const sortBy = document.getElementById('sortBy');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const message = document.getElementById('message');
 
-  function buildFlatList(data){
-    const list=[];
-    if(!data||typeof data!=='object')return list;
-    const recipes=data.recipes||{};
-    for(const key of Object.keys(recipes)){const item=Object.assign({},recipes[key]); item._type='recipe'; item.No=item.No!=null?String(item.No):String(key); list.push(item);}
-    const pres=data.preparations||{};
-    for(const key of Object.keys(pres)){const item=Object.assign({},pres[key]); item._type='pre'; item.No=item.No!=null?String(item.No):String(key); list.push(item);}
-    return list;
-  }
+  const modalBackdrop = document.getElementById('modalBackdrop');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalSubtitle = document.getElementById('modalSubtitle');
+  const modalIngredients = document.getElementById('modalIngredients');
+  const modalRecipe = document.getElementById('modalRecipe');
+  const modalMemo = document.getElementById('modalMemo');
+  const modalProps = document.getElementById('modalProps');
+  const modalPictures = document.getElementById('modalPictures');
+  const metaInfo = document.getElementById('metaInfo');
+  const openRaw = document.getElementById('openRaw');
+  const closeModalBtn = document.getElementById('closeModal');
+  const closeFooterBtn = document.getElementById('closeFooter');
 
-  function joinIfArray(val){ if(Array.isArray(val))return val.join(', '); if(val==null)return ''; return String(val); }
+  let rawData = null;
+  let flatList = []; // merged list with type annotation
+  let currentRawPath = null;
 
-  function clearTable(){ tbody.innerHTML=''; }
+  // Utility: safe text node creation
+  function elText(tag, text, cls){
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    el.textContent = (text === undefined || text === null) ? '' : String(text);
+    return el;
+  }
 
-  function renderTable(list){
-    clearTable();
-    if(!Array.isArray(list)||list.length===0){
-      tbody.innerHTML='<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
-      return;
-    }
-    const frag=document.createDocumentFragment();
-    for(const item of list){
-      const tr=document.createElement('tr');
-      // No
-      tr.appendChild(elText('td',item.No||'-'));
-      // Type
-      const tdType=document.createElement('td');
-      const span=document.createElement('span'); span.className='tag-type '+(item._type==='pre'?'type-pre':'type-recipe'); span.textContent=item._type;
-      tdType.appendChild(span); tr.appendChild(tdType);
-      // Picture
-      const tdPic=document.createElement('td'); tdPic.textContent=(Array.isArray(item.pictures)&&item.pictures.length>0)?'画像あり':'—'; tdPic.className='muted'; tr.appendChild(tdPic);
-      // Title / flavortxt
-      const tdTitle=document.createElement('td'); tdTitle.appendChild(elText('div',item.title||'(タイトルなし)')); tdTitle.appendChild(elText('div',item.flavortxt||'','muted')); tr.appendChild(tdTitle);
-      // fish / season
-      const tdFish=document.createElement('td'); tdFish.appendChild(elText('div',joinIfArray(item['fish-name'])||'-')); tdFish.appendChild(elText('div',joinIfArray(item.season)||'','muted')); tr.appendChild(tdFish);
-      // difficulty / time
-      const tdDiff=document.createElement('td'); tdDiff.appendChild(elText('div','難易度: '+(item.difficulty!=null?item.difficulty:'-'))); tdDiff.appendChild(elText('div','所要: '+(item.time!=null?item.time+'分':'-'),'muted')); tr.appendChild(tdDiff);
-      // cost / pre-recipe
-      const tdCost=document.createElement('td'); tdCost.appendChild(elText('div','¥'+(item.cost!=null?item.cost:'-'))); tdCost.appendChild(elText('div','参照: '+(item['pre-recipe']||'-'),'muted')); tr.appendChild(tdCost);
-      // actions
-      const tdActions=document.createElement('td'); tdActions.className='actions';
-      const viewBtn=document.createElement('button'); viewBtn.textContent='詳細'; tdActions.appendChild(viewBtn);
-      tr.appendChild(tdActions);
-      frag.appendChild(tr);
-    }
-    tbody.appendChild(frag);
-  }
+  // Try fetching from multiple paths in order
+  async function fetchAny(paths){
+    for (const p of paths){
+      try {
+        const res = await fetch(p, {cache: "no-store"});
+        if (!res.ok) continue;
+        const json = await res.json();
+        currentRawPath = p;
+        return json;
+      } catch(e){
+        // continue to next path
+        console.warn('fetch failed for', p, e);
+      }
+    }
+    throw new Error('recipes.json を見つけられませんでした。期待する場所: ' + paths.join(', '));
+  }
 
-  function applyFiltersAndRender(){
-    const q=(qInput.value||'').trim().toLowerCase();
-    const type=filterType.value;
-    let list=flatList.slice();
-    if(type!=='all') list=list.filter(i=>i._type===type);
-    if(q) list=list.filter(item=>{
-      const hay=[item.title,item.flavortxt,joinIfArray(item['fish-name']),joinIfArray(item.feature),joinIfArray(item.season),item.No].filter(Boolean).join(' ').toLowerCase();
-      return hay.indexOf(q)!==-1;
-    });
-    renderTable(list);
-  }
+  // Normalize and flatten recipes + preparations into an array for table
+  function buildFlatList(data){
+    const list = [];
+    if (!data || typeof data !== 'object') return list;
 
-  reloadBtn.addEventListener('click',()=>loadData());
-  qInput.addEventListener('input',()=>applyFiltersAndRender());
-  filterType.addEventListener('change',()=>applyFiltersAndRender());
-  sortBy.addEventListener('change',()=>applyFiltersAndRender());
+    // recipes
+    const recipes = data.recipes || {};
+    for (const key of Object.keys(recipes)){
+      const item = Object.assign({}, recipes[key]);
+      item._type = 'recipe';
+      // ensure No is string
+      item.No = item.No != null ? String(item.No) : String(key);
+      item._origKey = key;
+      list.push(item);
+    }
+    // preparations
+    const pres = data.preparations || {};
+    for (const key of Object.keys(pres)){
+      const item = Object.assign({}, pres[key]);
+      item._type = 'pre';
+      item.No = item.No != null ? String(item.No) : String(key);
+      item._origKey = key;
+      list.push(item);
+    }
+    return list;
+  }
 
-  async function loadData(){
-    message.textContent='読み込み中...';
-    try{
-      const json=await fetchAny(tryPaths);
-      rawData=json;
-      flatList=buildFlatList(json);
-      message.textContent=`読み込み完了 — 合計 ${flatList.length} 件`;
-      applyFiltersAndRender();
-    }catch(e){
-      message.innerHTML='<div class="notice">読み込みエラー: '+String(e.message)+'</div>';
-      clearTable();
-    }
-  }
+  // safe join array-like fields for display
+  function joinIfArray(val){
+    if (Array.isArray(val)) return val.join(', ');
+    if (val === undefined || val === null) return '';
+    return String(val);
+  }
 
-  loadData();
+// ★変更点 2: colspan の値を 7 から 8 に変更 (変更なし)
+  function clearTable(){ tbody.innerHTML = ''; }
+
+  // render table rows from list
+  function renderTable(list){
+    clearTable();
+    if (!Array.isArray(list) || list.length === 0){
+// ★変更点 3: colspan="7" を colspan="8" に変更 (変更なし)
+      tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const item of list){
+      const tr = document.createElement('tr');
+
+      // No
+      const tdNo = document.createElement('td');
+      tdNo.textContent = item.No || '-';
+      tr.appendChild(tdNo);
+
+      // Type
+      const tdType = document.createElement('td');
+      const span = document.createElement('span');
+      span.className = 'tag-type ' + (item._type === 'pre' ? 'type-pre' : 'type-recipe');
+      span.textContent = item._type;
+      tdType.appendChild(span);
+      tr.appendChild(tdType);
+
+// ★変更点 4: Picture 列のデータセルを追加 (変更なし)
+      // Picture (Added)
+      const tdPicture = document.createElement('td');
+      // item.pictures が配列であり、かつ要素が1つ以上あるかを確認
+      const hasPicture = Array.isArray(item.pictures) && item.pictures.length > 0;
+      // 元のCSSクラスを使うことで新しいクラスを定義しない
+      tdPicture.className = hasPicture ? 'pill' : 'muted';
+      tdPicture.textContent = hasPicture ? '画像あり' : '—'; 
+      tr.appendChild(tdPicture);
+// ★変更点 4: ここまで
+
+      // Title and flavortxt
+      const tdTitle = document.createElement('td');
+      const title = elText('div', item.title || '(タイトルなし)', ''); title.style.fontWeight='700';
+      const flav = elText('div', item.flavortxt || '', 'muted');
+      tdTitle.appendChild(title);
+      tdTitle.appendChild(flav);
+      tr.appendChild(tdTitle);
+
+      // fish / season
+      const tdFish = document.createElement('td');
+      tdFish.appendChild(elText('div', joinIfArray(item['fish-name']) || '-', ''));
+      tdFish.appendChild(elText('div', joinIfArray(item.season) || '', 'muted'));
+      tr.appendChild(tdFish);
+
+      // difficulty / time
+      const tdDiff = document.createElement('td');
+      tdDiff.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-')));
+      tdDiff.appendChild(elText('div', '所要: ' + (item.time != null ? item.time + '分' : '-'), 'muted'));
+      tr.appendChild(tdDiff);
+
+      // cost / pre-recipe
+      const tdCost = document.createElement('td');
+      tdCost.appendChild(elText('div', '¥' + (item.cost != null ? item.cost : '-')));
+      tdCost.appendChild(elText('div', '参照: ' + (item['pre-recipe'] || '-'), 'muted'));
+      tr.appendChild(tdCost);
+
+      // actions
+      const tdActions = document.createElement('td');
+      tdActions.className = 'actions';
+      const viewBtn = document.createElement('button');
+      viewBtn.textContent = '詳細';
+      viewBtn.addEventListener('click', ()=> openModal(item));
+      tdActions.appendChild(viewBtn);
+
+      // quick copy JSON button
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'JSON';
+      copyBtn.style.background = '#6b7280';
+      copyBtn.addEventListener('click', ()=> {
+        const blob = new Blob([JSON.stringify(item, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `item-${item.No || item._origKey}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+      tdActions.appendChild(copyBtn);
+
+      tr.appendChild(tdActions);
+      fragment.appendChild(tr);
+    }
+    tbody.appendChild(fragment);
+  }
+
+  // opens modal with item details
+  function openModal(item){
+    modalBackdrop.style.display = 'flex';
+    modalBackdrop.setAttribute('aria-hidden', 'false');
+
+    modalTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
+    modalSubtitle.textContent = item.flavortxt || '';
+
+    // meta info
+    metaInfo.innerHTML = '';
+    metaInfo.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'small'));
+    metaInfo.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'small'));
+    metaInfo.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'small'));
+    metaInfo.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'small'));
+    metaInfo.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'small'));
+    metaInfo.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'small'));
+    metaInfo.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'small'));
+
+    // ingredients
+    modalIngredients.innerHTML = '';
+    const ing = item.ingredients || {};
+    if (Object.keys(ing).length === 0){
+      modalIngredients.appendChild(elText('div','(材料なし)','muted'));
+    } else {
+      const ul = document.createElement('ul');
+      for (const k of Object.keys(ing)){
+        const li = document.createElement('li');
+        li.textContent = k + ': ' + (ing[k] || '');
+        ul.appendChild(li);
+      }
+      modalIngredients.appendChild(ul);
+    }
+
+    // recipe steps
+    modalRecipe.innerHTML = '';
+    const rec = item.recipe || [];
+    if (!Array.isArray(rec) || rec.length === 0){
+      modalRecipe.appendChild(elText('div','(手順なし)','muted'));
+    } else {
+      const ol = document.createElement('ol');
+      for (const step of rec){
+        const li = document.createElement('li');
+        li.textContent = step;
+        ol.appendChild(li);
+      }
+      modalRecipe.appendChild(ol);
+    }
+
+    // memo
+    modalMemo.innerHTML = '';
+    const memo = item.memo || [];
+    if (!Array.isArray(memo) || memo.length === 0){
+      modalMemo.appendChild(elText('div','(メモなし)','muted'));
+    } else {
+      const ulm = document.createElement('ul');
+      for (const m of memo){
+        ulm.appendChild(elText('li', m));
+      }
+      modalMemo.appendChild(ulm);
+    }
+
+    // props (pre only)
+    modalProps.innerHTML = '';
+    if (Array.isArray(item.props) && item.props.length){
+      const ulp = document.createElement('ul');
+      for (const p of item.props) ulp.appendChild(elText('li', p));
+      modalProps.appendChild(ulp);
+    } else {
+      modalProps.appendChild(elText('div', '(なし)', 'muted'));
+    }
+
+    // pictures
+    modalPictures.innerHTML = '';
+    const pics = item.pictures || [];
+    if (Array.isArray(pics) && pics.length){
+      const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+      modalPictures.appendChild(elText('pre', lines.join('\n')));
+    } else {
+      modalPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+    }
+
+    // open raw link points to detected path
+    if (currentRawPath){
+      openRaw.onclick = ()=> { window.open(currentRawPath, '_blank'); };
+    } else {
+      openRaw.onclick = ()=> {};
+    }
+  }
+
+  function closeModal(){
+    modalBackdrop.style.display = 'none';
+    modalBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  closeModalBtn.addEventListener('click', closeModal);
+  closeFooterBtn.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', (e)=> {
+    if (e.target === modalBackdrop) closeModal();
+  });
+  document.addEventListener('keydown', (e)=> {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // filter/sort logic
+  function applyFiltersAndRender(){
+    const q = (qInput.value || '').trim().toLowerCase();
+    const type = filterType.value;
+    const sortVal = sortBy.value;
+
+    let list = flatList.slice();
+
+    // filter by type
+    if (type !== 'all') list = list.filter(i => i._type === type);
+
+    // search across several fields
+    if (q){
+      list = list.filter(item => {
+        const hay = [
+          item.title, item.flavortxt,
+          joinIfArray(item['fish-name']),
+          joinIfArray(item.feature),
+          joinIfArray(item.season),
+          item.No
+        ].filter(Boolean).join(' ').toLowerCase();
+        return hay.indexOf(q) !== -1;
+      });
+    }
+
+    // sort
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    list.sort((a,b)=>{
+      // numeric-aware where possible
+      const av = a[key];
+      const bv = b[key];
+      // if No and they are strings like "P1", "1", try to derive numeric
+      if (key === 'No'){
+        const na = parseInt(String(av||'').replace(/^P/,'') || '0',10);
+        const nb = parseInt(String(bv||'').replace(/^P/,'') || '0',10);
+        return desc ? nb - na : na - nb;
+      }
+      const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
+      const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
+      if (!isFinite(an) || !isFinite(bn)){
+        // fallback string compare
+        return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+      }
+      return desc ? bn - an : an - bn;
+    });
+
+    renderTable(list);
+  }
+
+  // reload button
+  reloadBtn.addEventListener('click', ()=> {
+    loadData();
+  });
+
+  qInput.addEventListener('input', ()=> applyFiltersAndRender());
+  filterType.addEventListener('change', ()=> applyFiltersAndRender());
+  sortBy.addEventListener('change', ()=> applyFiltersAndRender());
+
+  // main loader
+  async function loadData(){
+    message.textContent = '読み込み中...';
+    try {
+      const json = await fetchAny(tryPaths);
+      rawData = json;
+      flatList = buildFlatList(json);
+      if (flatList.length === 0){
+        message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
+      } else {
+        message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
+      }
+      applyFiltersAndRender();
+    } catch (err){
+      console.error(err);
+      message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
+      clearTable();
+    }
+  }
+
+  // initial load
+  loadData();
+
+  // Expose for debug on window
+  window._recipesApp = {
+    loadData,
+    getRaw: ()=> rawData,
+    getFlat: ()=> flatList
+  };
 })();
 </script>
 </body>
