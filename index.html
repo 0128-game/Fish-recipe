@@ -5,117 +5,118 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>魚料理レシピ一覧</title>
 <style>
-  :root{
-    --bg:#f6f7fb;
-    --card:#ffffff;
-    --accent:#2b6cb0;
-    --muted:#666;
-    --success:#2f855a;
-    --danger:#c53030;
-    --max-width:1200px;
-  }
-  *{box-sizing:border-box}
-  body{
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",sans-serif;
-    margin:0;
-    background:var(--bg);
-    color:#222;
-    padding:20px;
-    display:flex;
-    justify-content:center;
-  }
-  .wrap{
-    width:100%;
-    max-width:var(--max-width);
-  }
-  header{
-    display:flex;
-    gap:12px;
-    align-items:flex-end;
-    margin-bottom:18px;
-  }
-  header h1{margin:0;font-size:1.3rem}
-  .controls{
-    margin-left:auto;
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-  input[type="search"], select{
-    padding:8px 10px;
-    border-radius:8px;
-    border:1px solid #d6d8df;
-    background:white;
-  }
-  button{
-    padding:8px 12px;
-    border-radius:8px;
-    border:none;
-    background:var(--accent);
-    color:white;
-    cursor:pointer;
-  }
-  button:disabled{opacity:.6;cursor:not-allowed}
-  main{
-    background:transparent;
-  }
-  table{
-    width:100%;
-    border-collapse:collapse;
-    background:var(--card);
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 6px 18px rgba(20,20,40,0.06);
-  }
-  thead th{
-    text-align:left;
-    padding:10px 12px;
-    font-size:0.85rem;
-    background:#f1f5f9;
-    border-bottom:1px solid #eee;
-    position:sticky;
-    top:0;
-    z-index:1;
-  }
-  tbody td{
-    padding:10px 12px;
-    border-bottom:1px dashed #eee;
-    vertical-align:top;
-    font-size:0.95rem;
-  }
-  tbody tr:hover{background:rgba(43,108,176,0.03)}
-  .muted{color:var(--muted);font-size:0.85rem}
-  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
-  .actions button{margin-right:6px}
-  .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
-  .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
-  .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-  /* modal */
-  .modal-backdrop{
-    position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
-  }
-  .modal{
-    width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(10,20,40,0.25);
-    max-height:90vh;overflow:auto;
-  }
-  .modal h2{margin:0 0 8px 0}
-  .modal .meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-  .grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-  .section-title{font-weight:700;margin:10px 0 6px 0}
-  ul{margin:6px 0 12px 20px}
-  pre{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2f7}
-  .small{font-size:0.85rem;color:var(--muted)}
-  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-  @media (max-width:700px){
-    .grid{grid-template-columns:1fr}
-    header{align-items:center}
-  }
-  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --accent:#2b6cb0;
+    --muted:#666;
+    --success:#2f855a;
+    --danger:#c53030;
+    --max-width:1200px;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",sans-serif;
+    margin:0;
+    background:var(--bg);
+    color:#222;
+    padding:20px;
+    display:flex;
+    justify-content:center;
+  }
+  .wrap{
+    width:100%;
+    max-width:var(--max-width);
+  }
+  header{
+    display:flex;
+    gap:12px;
+    /* 修正: flex-end から flex-start に変更 */
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  header h1{margin:0;font-size:1.3rem}
+  .controls{
+    margin-left:auto;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  input[type="search"], select{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #d6d8df;
+    background:white;
+  }
+  button{
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    background:var(--accent);
+    color:white;
+    cursor:pointer;
+  }
+  button:disabled{opacity:.6;cursor:not-allowed}
+  main{
+    background:transparent;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(20,20,40,0.06);
+  }
+  thead th{
+    text-align:left;
+    padding:10px 12px;
+    font-size:0.85rem;
+    background:#f1f5f9;
+    border-bottom:1px solid #eee;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px dashed #eee;
+    vertical-align:top;
+    font-size:0.95rem;
+  }
+  tbody tr:hover{background:rgba(43,108,176,0.03)}
+  .muted{color:var(--muted);font-size:0.85rem}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
+  .actions button{margin-right:6px}
+  .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
+  .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
+  .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
+  /* modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
+  }
+  .modal{
+    width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(10,20,40,0.25);
+    max-height:90vh;overflow:auto;
+  }
+  .modal h2{margin:0 0 8px 0}
+  .modal .meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .section-title{font-weight:700;margin:10px 0 6px 0}
+  ul{margin:6px 0 12px 20px}
+  pre{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2f7}
+  .small{font-size:0.85rem;color:var(--muted)}
+  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  @media (max-width:700px){
+    .grid{grid-template-columns:1fr}
+    header{align-items:center}
+  }
+  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -151,14 +152,14 @@
         <table id="recipeTable" aria-describedby="message">
           <thead>
             <tr>
-              <th style="width:80px">No</th>
-              <th style="width:80px">Type</th>
-              <th style="width:70px">Picture</th>
-              <th>Title / flavortxt</th>
-              <th style="width:160px">魚 / 旬</th>
-              <th style="width:120px">難易度 / 時間</th>
-              <th style="width:120px">費用 / 下処理参照</th>
-              <th style="width:110px">操作</th>
+                            <th style="width:70px">No</th>
+                            <th style="width:80px">Type</th>
+                            <th style="width:70px">Picture</th>
+                            <th>Title / flavortxt</th>
+                            <th style="width:160px">魚 / 旬</th>
+                            <th style="width:120px">難易度 / 時間</th>
+                            <th style="width:120px">費用 / 下処理参照</th>
+                            <th style="width:110px">操作</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -305,14 +306,14 @@
     return String(val);
   }
 
-// ★変更点 2: colspan の値を 7 から 8 に変更
+// ★変更点 2: colspan の値を 7 から 8 に変更 (変更なし)
   function clearTable(){ tbody.innerHTML = ''; }
 
   // render table rows from list
   function renderTable(list){
     clearTable();
     if (!Array.isArray(list) || list.length === 0){
-// ★変更点 3: colspan="7" を colspan="8" に変更
+// ★変更点 3: colspan="7" を colspan="8" に変更 (変更なし)
       tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
       return;
     }
@@ -333,14 +334,14 @@
       tdType.appendChild(span);
       tr.appendChild(tdType);
 
-// ★変更点 4: Picture 列のデータセルを追加
+// ★変更点 4: Picture 列のデータセルを追加 (変更なし)
       // Picture (Added)
       const tdPicture = document.createElement('td');
       // item.pictures が配列であり、かつ要素が1つ以上あるかを確認
       const hasPicture = Array.isArray(item.pictures) && item.pictures.length > 0;
       // 元のCSSクラスを使うことで新しいクラスを定義しない
       tdPicture.className = hasPicture ? 'pill' : 'muted';
-      tdPicture.textContent = hasPicture ? '画像あり' : '—'; 
+      tdPicture.textContent = hasPicture ? '画像あり' : '—'; 
       tr.appendChild(tdPicture);
 // ★変更点 4: ここまで
 
