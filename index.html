@@ -1,305 +1,164 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>魚料理レシピ一覧</title>
-<style>
-  :root{
-    --bg:#f6f7fb;
-    --card:#ffffff;
-    --accent:#2b6cb0;
-    --muted:#666;
-    --success:#2f855a;
-    --danger:#c53030;
-    --max-width:1200px;
-  }
-  *{box-sizing:border-box}
-  body{
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",sans-serif;
-    margin:0;
-    background:var(--bg);
-    color:#222;
-    padding:20px;
-    display:flex;
-    justify-content:center;
-  }
-  .wrap{
-    width:100%;
-    max-width:var(--max-width);
-  }
-  header{
-    display:flex;
-    gap:12px;
-    align-items:flex-end;
-    margin-bottom:18px;
-  }
-  header h1{margin:0;font-size:1.3rem}
-  .controls{
-    margin-left:auto;
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-  input[type="search"], select{
-    padding:8px 10px;
-    border-radius:8px;
-    border:1px solid #d6d8df;
-    background:white;
-  }
-  button{
-    padding:8px 12px;
-    border-radius:8px;
-    border:none;
-    background:var(--accent);
-    color:white;
-    cursor:pointer;
-  }
-  button:disabled{opacity:.6;cursor:not-allowed}
-  main{
-    background:transparent;
-  }
-  table{
-    width:100%;
-    border-collapse:collapse;
-    background:var(--card);
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 6px 18px rgba(20,20,40,0.06);
-  }
-  thead th{
-    text-align:left;
-    padding:10px 12px;
-    font-size:0.85rem;
-    background:#f1f5f9;
-    border-bottom:1px solid #eee;
-    position:sticky;
-    top:0;
-    z-index:1;
-  }
-  tbody td{
-    padding:10px 12px;
-    border-bottom:1px dashed #eee;
-    vertical-align:top;
-    font-size:0.95rem;
-  }
-  tbody tr:hover{background:rgba(43,108,176,0.03)}
-  .muted{color:var(--muted);font-size:0.85rem}
-  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
-  .actions button{margin-right:6px}
-  .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
-  .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
-  .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-  /* modal */
-  .modal-backdrop{
-    position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
-  }
-  .modal{
-    width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(10,20,40,0.25);
-    max-height:90vh;overflow:auto;
-  }
-  .modal h2{margin:0 0 8px 0}
-  .modal .meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-  .grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-  .section-title{font-weight:700;margin:10px 0 6px 0}
-  ul{margin:6px 0 12px 20px}
-  pre{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2f7}
-  .small{font-size:0.85rem;color:var(--muted)}
-  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-  @media (max-width:700px){
-    .grid{grid-template-columns:1fr}
-    header{align-items:center}
-  }
-  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
-  /* 画像表示用 */
-  #modalPictures {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  #modalPictures img {
-    max-width: 200px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #f0f0f0;
-  }
-</style>
-</head>
-<body>
-  <div class="wrap" id="app">
-    <header>
-      <h1>魚料理レシピ一覧</h1>
-      <div class="controls" aria-hidden="false">
-        <label class="small" for="q">検索:</label>
-        <input id="q" type="search" placeholder="タイトル・魚名・特徴などを検索">
-        <label class="small" for="filterType">タイプ:</label>
-        <select id="filterType">
-          <option value="all">すべて</option>
-          <option value="recipe">料理 (recipe)</option>
-          <option value="pre">下処理 (pre)</option>
-        </select>
-        <label class="small" for="sortBy">並び替え:</label>
-        <select id="sortBy">
-          <option value="No">No（昇順）</option>
-          <option value="-No">No（降順）</option>
-          <option value="cost">費用（昇順）</option>
-          <option value="-cost">費用（降順）</option>
-          <option value="time">所要時間（昇順）</option>
-          <option value="-time">所要時間（降順）</option>
-        </select>
-        <button id="reloadBtn" title="再読み込み">再読み込み</button>
-      </div>
-    </header>
-
-    <main>
-      <div id="message" role="status" aria-live="polite" style="margin-bottom:10px"></div>
-
-      <div style="overflow:auto;border-radius:10px">
-        <table id="recipeTable" aria-describedby="message">
-          <thead>
-            <tr>
-              <th style="width:80px">No</th>
-              <th style="width:80px">Type</th>
-              <th>Title / flavortxt</th>
-              <th style="width:160px">魚 / 旬</th>
-              <th style="width:120px">難易度 / 時間</th>
-              <th style="width:120px">費用 / 下処理参照</th>
-              <th style="width:110px">操作</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </main>
-
-    <!-- modal -->
-    <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-      <div class="modal" role="document" aria-labelledby="modalTitle">
-        <button id="closeModal" style="float:right;border:none;background:transparent;font-size:1.1rem;cursor:pointer">✕</button>
-        <h2 id="modalTitle"></h2>
-        <div id="modalSubtitle" class="small"></div>
-
-        <div class="meta" id="metaInfo"></div>
-
-        <div class="grid">
-          <div>
-            <div class="section-title">材料</div>
-            <div id="modalIngredients"></div>
-            <div class="section-title">手順</div>
-            <div id="modalRecipe"></div>
-          </div>
-          <div>
-            <div class="section-title">メモ / 追加情報</div>
-            <div id="modalMemo"></div>
-
-            <div class="section-title">その他 (props)</div>
-            <div id="modalProps" class="small"></div>
-
-            <div class="section-title">pictures</div>
-            <div id="modalPictures"></div>
-          </div>
-        </div>
-
-        <footer>
-          <div class="small">データソース: <code>docs/recipes.json</code></div>
-          <div>
-            <button id="openRaw">Raw 表示</button>
-            <button id="closeFooter">閉じる</button>
-          </div>
-        </footer>
-      </div>
-    </div>
-
-  </div>
-
-<script>
-(function(){
-  const tryPaths = [
-    'docs/recipes.json',
-    './docs/recipes.json',
-    '/recipes.json',
-    './recipes.json'
-  ];
-
-  const tbody = document.getElementById('tbody');
-  const qInput = document.getElementById('q');
-  const filterType = document.getElementById('filterType');
-  const sortBy = document.getElementById('sortBy');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const message = document.getElementById('message');
-
-  const modalBackdrop = document.getElementById('modalBackdrop');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalSubtitle = document.getElementById('modalSubtitle');
-  const modalIngredients = document.getElementById('modalIngredients');
-  const modalRecipe = document.getElementById('modalRecipe');
-  const modalMemo = document.getElementById('modalMemo');
-  const modalProps = document.getElementById('modalProps');
-  const modalPictures = document.getElementById('modalPictures');
-  const metaInfo = document.getElementById('metaInfo');
-  const openRaw = document.getElementById('openRaw');
-  const closeModalBtn = document.getElementById('closeModal');
-  const closeFooterBtn = document.getElementById('closeFooter');
-
-  let rawData = null;
-  let flatList = [];
-  let currentRawPath = null;
-
-  function elText(tag, text, cls){
-    const el = document.createElement(tag);
-    if (cls) el.className = cls;
-    el.textContent = (text === undefined || text === null) ? '' : String(text);
-    return el;
-  }
-
-  async function fetchAny(paths){
-    for (const p of paths){
-      try {
-        const res = await fetch(p, {cache: "no-store"});
-        if (!res.ok) continue;
-        const json = await res.json();
-        currentRawPath = p;
-        return json;
-      } catch(e){
-        console.warn('fetch failed for', p, e);
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>レシピ一覧</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #eee;
+    }
+    img.thumb {
+      max-width: 80px;
+      max-height: 80px;
+      object-fit: cover;
+      display: block;
+    }
+    .no-img {
+      color: #888;
+      font-size: 0.9em;
+    }
+    @media (max-width: 768px) {
+      table {
+        font-size: 12px;
+      }
+      img.thumb {
+        max-width: 50px;
+        max-height: 50px;
       }
     }
-    throw new Error('recipes.json を見つけられませんでした。');
-  }
+  </style>
+</head>
+<body>
+  <h1>レシピ一覧</h1>
+  <table id="recipe-table">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>type</th>
+        <th>pictures</th>
+        <th>flavortxt</th>
+        <th>title</th>
+        <th>fish-name</th>
+        <th>feature</th>
+        <th>season</th>
+        <th>difficulty</th>
+        <th>cost</th>
+        <th>timing</th>
+        <th>time</th>
+        <th>pre-recipe</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
 
-  function displayPictures(pictures){
-    modalPictures.innerHTML = '';
-    if (!pictures || !Array.isArray(pictures)) return;
+  <script>
+    async function loadRecipes() {
+      try {
+        const response = await fetch('./docs/recipes.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('JSONの読み込みに失敗しました');
+        const data = await response.json();
 
-    pictures.forEach((picUrl, index) => {
-      if (index >= 3 && picUrl === null) return;
-      const img = document.createElement('img');
-      if (index < 3 && picUrl === null) {
-        img.src = './picture/noimage.png';
-      } else {
-        img.src = picUrl ? picUrl : './picture/noimage.png';
+        const tableBody = document.querySelector('#recipe-table tbody');
+
+        const allItems = [...(data.recipes || []), ...(data.preparations || [])];
+
+        allItems.forEach(item => {
+          const tr = document.createElement('tr');
+
+          // No
+          tr.appendChild(createCell(item.No));
+
+          // type
+          tr.appendChild(createCell(item.type));
+
+          // pictures
+          const picCell = document.createElement('td');
+          if (Array.isArray(item.pictures) && item.pictures.length > 0) {
+            const firstPic = item.pictures.find(p => p !== null);
+            if (firstPic) {
+              const img = document.createElement('img');
+              img.src = firstPic;
+              img.alt = 'サムネイル';
+              img.className = 'thumb';
+              picCell.appendChild(img);
+            } else {
+              picCell.textContent = 'なし';
+              picCell.className = 'no-img';
+            }
+          } else {
+            picCell.textContent = 'なし';
+            picCell.className = 'no-img';
+          }
+          tr.appendChild(picCell);
+
+          // flavortxt
+          tr.appendChild(createCell(item.flavortxt || ''));
+
+          // title
+          tr.appendChild(createCell(item.title || ''));
+
+          // fish-name
+          tr.appendChild(createCell(Array.isArray(item['fish-name']) ? item['fish-name'].join(', ') : ''));
+
+          // feature
+          tr.appendChild(createCell(Array.isArray(item.feature) ? item.feature.join(', ') : ''));
+
+          // season
+          tr.appendChild(createCell(Array.isArray(item.season) ? item.season.join(', ') : ''));
+
+          // difficulty
+          tr.appendChild(createCell(item.difficulty));
+
+          // cost
+          tr.appendChild(createCell(item.cost));
+
+          // timing（料理のみ）
+          tr.appendChild(createCell(item.timing || ''));
+
+          // time
+          tr.appendChild(createCell(item.time));
+
+          // pre-recipe
+          tr.appendChild(createCell(item['pre-recipe'] || ''));
+
+          tableBody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+        alert('レシピの読み込みでエラーが発生しました');
       }
-      img.alt = `画像${index + 1}`;
-      modalPictures.appendChild(img);
-    });
-  }
+    }
 
-  // 後続のレシピ表示処理・検索処理などは変更なし
+    function createCell(text) {
+      const td = document.createElement('td');
+      td.textContent = text ?? '';
+      return td;
+    }
 
-  // 閉じるボタン
-  closeModalBtn.addEventListener('click', () => {
-    modalBackdrop.style.display = 'none';
-  });
-  closeFooterBtn.addEventListener('click', () => {
-    modalBackdrop.style.display = 'none';
-  });
-
-})();
-</script>
+    loadRecipes();
+  </script>
 </body>
 </html>
