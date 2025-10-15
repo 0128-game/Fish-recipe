@@ -78,7 +78,7 @@
             item.flavortxt ?? '',
             item.title ?? '',
             item.type ?? '',
-            '', // 👈 pictures 列は空欄
+            '&nbsp;', // 👈 pictures 列は必ず空欄を表示
             (item["fish-name"] || []).join(', '),
             (item.feature || []).join(', '),
             (item.season || []).join(', '),
@@ -94,7 +94,7 @@
 
           cells.forEach(text => {
             const td = document.createElement('td');
-            td.innerHTML = text;
+            td.innerHTML = text; // 空欄には &nbsp; を入れて必ず表示
             tr.appendChild(td);
           });
 
