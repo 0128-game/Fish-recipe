@@ -91,9 +91,6 @@
   .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
   .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
   .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-  
-  /* 新しいスタイル */
-  .has-picture{color:var(--success)}
   /* modal */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
@@ -308,7 +305,7 @@
     return String(val);
   }
 
-// ★変更点 2: colspan の数値を 7 から 8 に変更
+// ★変更点 2: colspan の値を 7 から 8 に変更
   function clearTable(){ tbody.innerHTML = ''; }
 
   // render table rows from list
@@ -336,12 +333,14 @@
       tdType.appendChild(span);
       tr.appendChild(tdType);
 
-// ★ここから変更点 4: picture 列を追加
+// ★変更点 4: Picture 列のデータセルを追加
       // Picture (Added)
       const tdPicture = document.createElement('td');
+      // item.pictures が配列であり、かつ要素が1つ以上あるかを確認
       const hasPicture = Array.isArray(item.pictures) && item.pictures.length > 0;
-      tdPicture.textContent = hasPicture ? '✅' : '—';
-      if(hasPicture) tdPicture.className = 'has-picture';
+      // 元のCSSクラスを使うことで新しいクラスを定義しない
+      tdPicture.className = hasPicture ? 'pill' : 'muted';
+      tdPicture.textContent = hasPicture ? '画像あり' : '—'; 
       tr.appendChild(tdPicture);
 // ★変更点 4: ここまで
 
