@@ -7,14 +7,13 @@
 <!-- 👇 CSSは元のまま（省略なし） -->
 <style>
 :root{
-  --bg:#f6f7fb; /* 薄いグレー */
-  --card:#ffffff; /* 白 */
-  --accent:#2b6cb0; /* 濃い青 */
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --accent:#2b6cb0;
   --muted:#666;
   --success:#2f855a;
   --danger:#c53030;
   --max-width:1200px;
-  /* 視認性向上のため、ヘッダー背景色をわずかに濃く */
   --header-bg:#e2e8f0;
 }
 *{box-sizing:border-box}
@@ -61,9 +60,9 @@ button{
   cursor:pointer;
 }
 button:disabled{opacity:.6;cursor:not-allowed}
-main{
-  background:transparent;
-}
+main{background:transparent}
+
+/* === テーブル === */
 table{
   width:100%;
   border-collapse:collapse;
@@ -71,11 +70,37 @@ table{
   border-radius:10px;
   overflow:hidden;
   box-shadow:0 6px 18px rgba(20,20,40,0.06);
+  table-layout:fixed; /* これで列幅が安定 */
 }
-thead th{
-  text-align:left;
+thead th, tbody td{
   padding:10px 12px;
-  font-size:0.85rem;
+  text-align:left;
+  vertical-align:top;
+  font-size:0.9rem;
+  word-break:break-word;   /* 折り返し許可 */
+  overflow:hidden;
+  text-overflow:ellipsis; /* はみ出し防止 */
+}
+
+/* カラム幅の固定・統一 */
+thead th:nth-child(1),
+tbody td:nth-child(1){width:70px;min-width:70px;max-width:70px;text-align:center;}
+thead th:nth-child(2),
+tbody td:nth-child(2){width:80px;min-width:80px;max-width:80px;text-align:center;}
+thead th:nth-child(3),
+tbody td:nth-child(3){width:70px;min-width:70px;max-width:70px;text-align:center;}
+thead th:nth-child(4),
+tbody td:nth-child(4){min-width:200px;}
+thead th:nth-child(5),
+tbody td:nth-child(5){width:160px;min-width:160px;}
+thead th:nth-child(6),
+tbody td:nth-child(6){width:120px;min-width:120px;text-align:center;}
+thead th:nth-child(7),
+tbody td:nth-child(7){width:140px;min-width:140px;text-align:center;}
+thead th:nth-child(8),
+tbody td:nth-child(8){width:110px;min-width:110px;text-align:center;}
+
+thead th{
   background:var(--header-bg);
   border-bottom:1px solid #eee;
   position:sticky;
@@ -83,13 +108,12 @@ thead th{
   z-index:1;
   white-space:nowrap;
 }
-tbody td{
-  padding:10px 12px;
-  border-bottom:1px dashed #eee;
-  vertical-align:top;
-  font-size:0.95rem;
-}
 tbody tr:hover{background:rgba(43,108,176,0.03)}
+tbody td{
+  border-bottom:1px dashed #eee;
+}
+
+/* === 汎用スタイル === */
 .muted{color:var(--muted);font-size:0.85rem}
 .pill{
   display:inline-block;
@@ -103,6 +127,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
 .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
 .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
+
+/* === モーダル === */
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -166,6 +192,8 @@ footer{
     justify-content:flex-start;
     gap:10px;
   }
+  table{table-layout:auto;} /* モバイルでは柔軟に */
+  thead th, tbody td{white-space:normal;}
   .grid{grid-template-columns:1fr}
 }
 .notice{
@@ -176,7 +204,6 @@ footer{
   border:1px solid rgba(197,48,48,0.12);
   margin-bottom:12px;
 }
-
 </style>
 </head>
 <body>
