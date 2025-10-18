@@ -167,83 +167,139 @@
 
 <script>
 (function(){
-  const tryPaths = [
-    'docs/recipes.json',
-    './docs/recipes.json',
-    '/recipes.json',
-    './recipes.json'
-  ];
+  const tryPaths = [
+    'docs/recipes.json',
+    './docs/recipes.json',
+    '/recipes.json',
+    './recipes.json'
+  ];
 
-  const tbody = document.getElementById('tbody');
-  const qInput = document.getElementById('q');
-  const filterType = document.getElementById('filterType');
-  const sortBy = document.getElementById('sortBy');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const message = document.getElementById('message');
+  const tbody = document.getElementById('tbody');
+  const qInput = document.getElementById('q');
+  const filterType = document.getElementById('filterType');
+  const sortBy = document.getElementById('sortBy');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const message = document.getElementById('message');
 
-  let recipes = [];
+  let recipes = [];
 
-  async function loadData(){
-    for (const path of tryPaths){
-      try{
-        const res = await fetch(path);
-        if(!res.ok) continue;
-        const data = await res.json();
-        recipes = data.recipes;
-        renderTable();
-        return;
-      }catch(e){}
-    }
-    message.textContent = 'JSONの読み込みに失敗しました。';
-  }
+  // JSONオブジェクトを配列に変換し、キー名をテーブル用に整形するヘルパー関数
+  function normalizeData(dataObject) {
+    return Object.keys(dataObject).map(key => {
+      const item = dataObject[key];
+      
+      // 1. キー名をテーブルの描画に合わせて修正
+      return {
+        No: item.No ?? '',
+        type: item.type ?? '',
+        title: item.title ?? '',
+        flavortxt: item.flavortxt ?? '',
+        
+        // 'fish-name' (配列) を 'fish' (文字列) に変換
+        fish: Array.isArray(item['fish-name']) ? item['fish-name'].join('、') : (item['fish-name'] ?? ''),
+        
+        season: Array.isArray(item.season) ? item.season.join('、') : (item.season ?? ''),
+        
+        // 'difficulty' を 'level' に変更
+        level: item.difficulty ?? '',
+        
+        cost: item.cost ?? 0,
+        time: item.time ?? 0,
+        
+        // 'pre-recipe' を 'pre-ref' に変更
+        'pre-ref': item['pre-recipe'] ?? '',
+        
+        // その他、検索で利用するキーも追加
+        'feature': Array.isArray(item.feature) ? item.feature.join('、') : (item.feature ?? ''),
 
-  function renderTable(){
-    const q = qInput.value.trim().toLowerCase();
-    const typeFilter = filterType.value;
+        // 詳細表示用に元のデータを残す（ここでは未使用だが汎用性のため）
+        original: item
+      };
+    });
+  }
 
-    let list = recipes.filter(item=>{
-      if(typeFilter!=='all' && item.type!==typeFilter) return false;
-      if(q && !(item.title?.toLowerCase().includes(q) || item.flavortxt?.toLowerCase().includes(q))) return false;
-      return true;
-    });
 
-    const sortVal = sortBy.value;
-    const desc = sortVal.startsWith('-');
-    const key = desc ? sortVal.slice(1) : sortVal;
-    list.sort((a,b)=>{
-      let av = a[key] ?? '';
-      let bv = b[key] ?? '';
-      if(!isNaN(av) && !isNaN(bv)){ av = Number(av); bv = Number(bv); }
-      if(av<bv) return desc?1:-1;
-      if(av>bv) return desc?-1:1;
-      return 0;
-    });
+  async function loadData(){
+    for (const path of tryPaths){
+      try{
+        const res = await fetch(path);
+        if(!res.ok) continue;
+        const data = await res.json();
+        
+        // 2. JSONのオブジェクト構造を配列に変換し、キー名を修正
+        // recipesとpreparationsの両方を配列として結合
+        const normalizedRecipes = data.recipes ? normalizeData(data.recipes) : [];
+        const normalizedPreparations = data.preparations ? normalizeData(data.preparations) : [];
+        
+        recipes = [...normalizedRecipes, ...normalizedPreparations];
+        
+        renderTable();
+        return;
+      }catch(e){
+        console.error("データ読み込みまたは解析エラー:", e);
+      }
+    }
+    message.textContent = 'JSONの読み込みに失敗しました。';
+  }
 
-    tbody.innerHTML='';
-    for(const item of list){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${item.No??''}</td>
-        <td><span class="tag-type ${item.type==='recipe'?'type-recipe':'type-pre'}">${item.type}</span></td>
-        <td>&nbsp;</td>  <!-- ← 空欄でもセルは残る -->
-        <td><div><strong>${item.title??''}</strong></div><div class="muted">${item.flavortxt??''}</div></td>
-        <td>${item.fish??''}<div class="muted">${item.season??''}</div></td>
-        <td>${item.level??''}<div class="muted">${item.time??''}分</div></td>
-        <td>${item.cost??''}円<div class="muted">${item['pre-ref']??''}</div></td>
-        <td class="actions">
-          <button>詳細</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
+  function renderTable(){
+    const q = qInput.value.trim().toLowerCase();
+    const typeFilter = filterType.value;
 
-  qInput.addEventListener('input',renderTable);
-  filterType.addEventListener('change',renderTable);
-  sortBy.addEventListener('change',renderTable);
-  reloadBtn.addEventListener('click',loadData);
+    let list = recipes.filter(item=>{
+      if(typeFilter!=='all' && item.type!==typeFilter) return false;
+      
+      // 検索ロジック (タイトル, 特徴文, 魚名, 旬, 特徴で検索)
+      if(q){
+        const searchableFields = [item.title, item.flavortxt, item.fish, item.season, item.feature];
+        const isMatch = searchableFields.some(field => field && String(field).toLowerCase().includes(q));
+        if (!isMatch) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
 
-  loadData();
+    const sortVal = sortBy.value;
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    list.sort((a,b)=>{
+      let av = a[key] ?? '';
+      let bv = b[key] ?? '';
+      if(!isNaN(av) && !isNaN(bv)){ av = Number(av); bv = Number(bv); }
+      if(av<bv) return desc?1:-1;
+      if(av>bv) return desc?-1:1;
+      return 0;
+    });
+
+    tbody.innerHTML='';
+    // 結果件数を表示に追加
+    message.textContent = `全 ${recipes.length} 件中、${list.length} 件を表示しています。`;
+    
+    for(const item of list){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.No??''}</td>
+        <td><span class="tag-type ${item.type==='recipe'?'type-recipe':'type-pre'}">${item.type}</span></td>
+        <td>&nbsp;</td>          <td><div><strong>${item.title??''}</strong></div><div class="muted">${item.flavortxt??''}</div></td>
+        <td>${item.fish??''}<div class="muted">${item.season??''}</div></td>
+        <td>${item.level??''}<div class="muted">${item.time??''}分</div></td>
+        <td>${item.cost??''}円<div class="muted">${item['pre-ref']??''}</div></td>
+        <td class="actions">
+          <button>詳細</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  qInput.addEventListener('input',renderTable);
+  filterType.addEventListener('change',renderTable);
+  sortBy.addEventListener('change',renderTable);
+  reloadBtn.addEventListener('click',loadData);
+
+  loadData();
 })();
 </script>
 </body>
