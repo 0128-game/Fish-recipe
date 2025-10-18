@@ -7,13 +7,15 @@
 <!-- 👇 CSSは元のまま（省略なし） -->
 <style>
   :root{
-    --bg:#f6f7fb;
-    --card:#ffffff;
-    --accent:#2b6cb0;
+    --bg:#f6f7fb; /* 薄いグレー */
+    --card:#ffffff; /* 白 */
+    --accent:#2b6cb0; /* 濃い青 */
     --muted:#666;
     --success:#2f855a;
     --danger:#c53030;
     --max-width:1200px;
+    /* 視認性向上のため、ヘッダー背景色をわずかに濃く */
+    --header-bg: #e2e8f0; 
   }
   *{box-sizing:border-box}
   body{
@@ -30,7 +32,6 @@
     max-width:var(--max-width);
   }
   header{
-    /* 修正: 700px未満でアイテムが縦に並ぶように調整 */
     display:flex;
     flex-direction: row; 
     gap:12px;
@@ -75,12 +76,14 @@
     text-align:left;
     padding:10px 12px;
     font-size:0.85rem;
-    background:#f1f5f9;
+    /* 修正: ヘッダー背景色を調整 */
+    background:var(--header-bg);
     border-bottom:1px solid #eee;
-    /* テーブルヘッダー固定のスタイル（既存） */
     position:sticky;
     top:0;
     z-index:1;
+    /* 修正: 文字が途中で改行されないようにし、スペースを調整 */
+    white-space: nowrap;
   }
   tbody td{
     padding:10px 12px;
@@ -93,6 +96,7 @@
   .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
   .actions button{margin-right:6px}
   .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
+  /* 配色維持 */
   .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
   .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
   .modal-backdrop{
@@ -115,18 +119,16 @@
   .small{font-size:0.85rem;color:var(--muted)}
   footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
   @media (max-width:700px){
-    /* 修正: 700px以下でヘッダーを縦並びにする */
     header{
       flex-direction: column;
-      align-items: stretch; /* 子要素全体を横幅いっぱいに広げる */
+      align-items: stretch;
     }
-    header h1{margin-bottom: 8px;} /* タイトル下に少し隙間を追加 */
+    header h1{margin-bottom: 8px;}
     
-    /* 修正: controlsを横幅いっぱいにし、並びを改善 */
     .controls{
       margin-left: 0;
-      justify-content: flex-start; /* 左寄せにする */
-      gap: 10px; /* 隙間を調整 */
+      justify-content: flex-start;
+      gap: 10px;
     }
     
     .grid{grid-template-columns:1fr}
