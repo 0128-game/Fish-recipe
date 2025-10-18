@@ -1,95 +1,250 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>レシピ一覧</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f5f5f5;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #eee;
-    }
-    tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>魚料理レシピ一覧</title>
+<!-- 👇 CSSは元のまま（省略なし） -->
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --accent:#2b6cb0;
+    --muted:#666;
+    --success:#2f855a;
+    --danger:#c53030;
+    --max-width:1200px;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",sans-serif;
+    margin:0;
+    background:var(--bg);
+    color:#222;
+    padding:20px;
+    display:flex;
+    justify-content:center;
+  }
+  .wrap{
+    width:100%;
+    max-width:var(--max-width);
+  }
+  header{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  header h1{margin:0;font-size:1.3rem}
+  .controls{
+    margin-left:auto;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  input[type="search"], select{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #d6d8df;
+    background:white;
+  }
+  button{
+    padding:8px 12px;
+    border-radius:8px;
+    border:none;
+    background:var(--accent);
+    color:white;
+    cursor:pointer;
+  }
+  button:disabled{opacity:.6;cursor:not-allowed}
+  main{
+    background:transparent;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(20,20,40,0.06);
+  }
+  thead th{
+    text-align:left;
+    padding:10px 12px;
+    font-size:0.85rem;
+    background:#f1f5f9;
+    border-bottom:1px solid #eee;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px dashed #eee;
+    vertical-align:top;
+    font-size:0.95rem;
+  }
+  tbody tr:hover{background:rgba(43,108,176,0.03)}
+  .muted{color:var(--muted);font-size:0.85rem}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
+  .actions button{margin-right:6px}
+  .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
+  .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
+  .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
+  }
+  .modal{
+    width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(10,20,40,0.25);
+    max-height:90vh;overflow:auto;
+  }
+  .modal h2{margin:0 0 8px 0}
+  .modal .meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .section-title{font-weight:700;margin:10px 0 6px 0}
+  ul{margin:6px 0 12px 20px}
+  pre{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2f7}
+  .small{font-size:0.85rem;color:var(--muted)}
+  footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  @media (max-width:700px){
+    .grid{grid-template-columns:1fr}
+    header{align-items:center}
+  }
+  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
+</style>
 </head>
 <body>
-  <h1>レシピ一覧</h1>
-  <table id="recipeTable">
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>type</th>
-        <th>picture</th>
-        <th>fish-name</th>
-        <th>feature</th>
-        <th>season</th>
-        <th>difficulty</th>
-        <th>pre-recipe</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="wrap" id="app">
+    <header>
+      <h1>魚料理レシピ一覧</h1>
+      <div class="controls" aria-hidden="false">
+        <label class="small" for="q">検索:</label>
+        <input id="q" type="search" placeholder="タイトル・魚名・特徴などを検索">
+        <label class="small" for="filterType">タイプ:</label>
+        <select id="filterType">
+          <option value="all">すべて</option>
+          <option value="recipe">料理 (recipe)</option>
+          <option value="pre">下処理 (pre)</option>
+        </select>
+        <label class="small" for="sortBy">並び替え:</label>
+        <select id="sortBy">
+          <option value="No">No（昇順）</option>
+          <option value="-No">No（降順）</option>
+          <option value="cost">費用（昇順）</option>
+          <option value="-cost">費用（降順）</option>
+          <option value="time">所要時間（昇順）</option>
+          <option value="-time">所要時間（降順）</option>
+        </select>
+        <button id="reloadBtn" title="再読み込み">再読み込み</button>
+      </div>
+    </header>
 
-  <script>
-    let recipes = [];
+    <main>
+      <div id="message" role="status" aria-live="polite" style="margin-bottom:10px"></div>
+      <div style="overflow:auto;border-radius:10px">
+        <table id="recipeTable" aria-describedby="message">
+          <thead>
+            <tr>
+              <th style="width:70px">No</th>
+              <th style="width:80px">Type</th>
+              <th style="width:70px">Picture</th>
+              <th>Title / flavortxt</th>
+              <th style="width:160px">魚 / 旬</th>
+              <th style="width:120px">難易度 / 時間</th>
+              <th style="width:120px">費用 / 下処理参照</th>
+              <th style="width:110px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </main>
 
-    async function loadData() {
-      try {
-        const res = await fetch("./docs/recipes.json");
+<script>
+(function(){
+  const tryPaths = [
+    'docs/recipes.json',
+    './docs/recipes.json',
+    '/recipes.json',
+    './recipes.json'
+  ];
+
+  const tbody = document.getElementById('tbody');
+  const qInput = document.getElementById('q');
+  const filterType = document.getElementById('filterType');
+  const sortBy = document.getElementById('sortBy');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const message = document.getElementById('message');
+
+  let recipes = [];
+
+  async function loadData(){
+    for (const path of tryPaths){
+      try{
+        const res = await fetch(path);
+        if(!res.ok) continue;
         const data = await res.json();
-        recipes = data.recipes; // recipes配列を取得
+        recipes = data.recipes;
         renderTable();
-      } catch (error) {
-        console.error("JSONの読み込みに失敗しました:", error);
-      }
+        return;
+      }catch(e){}
     }
+    message.textContent = 'JSONの読み込みに失敗しました。';
+  }
 
-    function createRow(item) {
-      const row = document.createElement("tr");
-      const cells = [
-        item.No || "",
-        item.type || "",
-        "", // pictureは空欄
-        item["fish-name"] || "",
-        item.feature || "",
-        item.season || "",
-        item.difficulty || "",
-        item["pre-recipe"] || ""
-      ];
+  function renderTable(){
+    const q = qInput.value.trim().toLowerCase();
+    const typeFilter = filterType.value;
 
-      cells.forEach(cellData => {
-        const td = document.createElement("td");
-        td.textContent = cellData;
-        row.appendChild(td);
-      });
+    let list = recipes.filter(item=>{
+      if(typeFilter!=='all' && item.type!==typeFilter) return false;
+      if(q && !(item.title?.toLowerCase().includes(q) || item.flavortxt?.toLowerCase().includes(q))) return false;
+      return true;
+    });
 
-      return row;
+    const sortVal = sortBy.value;
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    list.sort((a,b)=>{
+      let av = a[key] ?? '';
+      let bv = b[key] ?? '';
+      if(!isNaN(av) && !isNaN(bv)){ av = Number(av); bv = Number(bv); }
+      if(av<bv) return desc?1:-1;
+      if(av>bv) return desc?-1:1;
+      return 0;
+    });
+
+    tbody.innerHTML='';
+    for(const item of list){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.No??''}</td>
+        <td><span class="tag-type ${item.type==='recipe'?'type-recipe':'type-pre'}">${item.type}</span></td>
+        <td>&nbsp;</td>  <!-- ← 空欄でもセルは残る -->
+        <td><div><strong>${item.title??''}</strong></div><div class="muted">${item.flavortxt??''}</div></td>
+        <td>${item.fish??''}<div class="muted">${item.season??''}</div></td>
+        <td>${item.level??''}<div class="muted">${item.time??''}分</div></td>
+        <td>${item.cost??''}円<div class="muted">${item['pre-ref']??''}</div></td>
+        <td class="actions">
+          <button>詳細</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     }
+  }
 
-    function renderTable() {
-      const tbody = document.querySelector("#recipeTable tbody");
-      tbody.innerHTML = "";
-      recipes.forEach(item => {
-        tbody.appendChild(createRow(item));
-      });
-    }
+  qInput.addEventListener('input',renderTable);
+  filterType.addEventListener('change',renderTable);
+  sortBy.addEventListener('change',renderTable);
+  reloadBtn.addEventListener('click',loadData);
 
-    loadData();
-  </script>
+  loadData();
+})();
+</script>
 </body>
 </html>
