@@ -91,14 +91,6 @@
   .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
   .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
   .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-
-  /* ★ Picture列用スタイル追加 */
-  table th:nth-child(3),
-  table td:nth-child(3) {
-    width:70px; 
-    text-align:center;
-  }
-
   /* modal */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
@@ -123,7 +115,7 @@
     .grid{grid-template-columns:1fr}
     header{align-items:center}
   }
-  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:#c53030;border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
+  .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -174,14 +166,12 @@
       </div>
     </main>
 
-      <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="modal" role="document" aria-labelledby="modalTitle">
         <button id="closeModal" style="float:right;border:none;background:transparent;font-size:1.1rem;cursor:pointer">✕</button>
         <h2 id="modalTitle"></h2>
         <div id="modalSubtitle" class="small"></div>
-
         <div class="meta" id="metaInfo"></div>
-
         <div class="grid">
           <div>
             <div class="section-title">材料</div>
@@ -192,15 +182,12 @@
           <div>
             <div class="section-title">メモ / 追加情報</div>
             <div id="modalMemo"></div>
-
             <div class="section-title">その他 (props)</div>
             <div id="modalProps" class="small"></div>
-
             <div class="section-title">pictures</div>
             <div id="modalPictures" class="small"></div>
           </div>
         </div>
-
         <footer>
           <div class="small">データソース: <code>docs/recipes.json</code></div>
           <div>
@@ -210,87 +197,90 @@
         </footer>
       </div>
     </div>
-
   </div>
 
 <script>
-const tbody = document.getElementById("tbody");
-const q = document.getElementById("q");
-const filterType = document.getElementById("filterType");
-const sortBy = document.getElementById("sortBy");
-const reloadBtn = document.getElementById("reloadBtn");
+(function(){
+  const tryPaths = [
+    'docs/recipes.json',
+    './docs/recipes.json',
+    '/recipes.json',
+    './recipes.json'
+  ];
 
-let recipes = [];
+  const tbody = document.getElementById('tbody');
+  const qInput = document.getElementById('q');
+  const filterType = document.getElementById('filterType');
+  const sortBy = document.getElementById('sortBy');
+  const reloadBtn = document.getElementById('reloadBtn');
+  const message = document.getElementById('message');
 
-async function loadData(){
-  const res = await fetch("docs/recipes.json");
-  recipes = await res.json();
-  renderTable();
-}
+  let recipes = [];
+  let currentPath = null;
 
-function renderTable(){
-  const term = q.value.toLowerCase();
-  const type = filterType.value;
-  const sort = sortBy.value;
-  let filtered = recipes.filter(r=>{
-    const matchTerm = r.title.toLowerCase().includes(term) || (r.flavortxt && r.flavortxt.toLowerCase().includes(term));
-    const matchType = type==="all" ? true : r.type===type;
-    return matchTerm && matchType;
-  });
-  if(sort){
-    const desc = sort.startsWith("-");
-    const key = desc ? sort.slice(1) : sort;
-    filtered.sort((a,b)=>{
-      let va=a[key], vb=b[key];
-      if(typeof va==="string") va=va.toLowerCase();
-      if(typeof vb==="string") vb=vb.toLowerCase();
-      if(va>vb) return desc?-1:1;
-      if(va<vb) return desc?1:-1;
+  async function loadData(){
+    for (const path of tryPaths){
+      try{
+        const res = await fetch(path);
+        if(!res.ok) continue;
+        const data = await res.json();
+        recipes = data.recipes; // ← 修正ポイント
+        currentPath = path;
+        renderTable();
+        return;
+      }catch(e){}
+    }
+    message.textContent = 'JSONの読み込みに失敗しました。';
+  }
+
+  function renderTable(){
+    const q = qInput.value.trim().toLowerCase();
+    const typeFilter = filterType.value;
+
+    let list = recipes.filter(item=>{
+      if(typeFilter!=='all' && item.type!==typeFilter) return false;
+      if(q && !(item.title?.toLowerCase().includes(q) || item.flavortxt?.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    const sortVal = sortBy.value;
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    list.sort((a,b)=>{
+      let av = a[key] ?? '';
+      let bv = b[key] ?? '';
+      if(!isNaN(av) && !isNaN(bv)){ av = Number(av); bv = Number(bv);}
+      if(av<bv) return desc?1:-1;
+      if(av>bv) return desc?-1:1;
       return 0;
     });
+
+    tbody.innerHTML='';
+    for(const item of list){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.No??''}</td>
+        <td><span class="tag-type ${item.type==='recipe'?'type-recipe':'type-pre'}">${item.type}</span></td>
+        <td></td>
+        <td><div><strong>${item.title??''}</strong></div><div class="muted">${item.flavortxt??''}</div></td>
+        <td>${item.fish??''}<div class="muted">${item.season??''}</div></td>
+        <td>${item.level??''}<div class="muted">${item.time??''}分</div></td>
+        <td>${item.cost??''}円<div class="muted">${item.preref??''}</div></td>
+        <td class="actions"><button>詳細</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    message.textContent = `${list.length} 件表示中`;
   }
-  tbody.innerHTML="";
-  filtered.forEach(r=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r.No}</td>
-      <td><span class="tag-type type-${r.type}">${r.type}</span></td>
-      <td>${r.pictures && r.pictures[0] ? `<img src="${r.pictures[0]}" alt="picture" style="width:50px;height:auto;border-radius:4px">` : "—"}</td>
-      <td><strong>${r.title}</strong><br><span class="muted">${r.flavortxt||""}</span></td>
-      <td>${r.fish || ""} ${r.season||""}</td>
-      <td>${r.level||""} / ${r.time||""}</td>
-      <td>${r.cost||""} / ${r.preRef||""}</td>
-      <td class="actions">
-        <button onclick="openModal('${r.No}')">表示</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
 
-const modalBackdrop = document.getElementById("modalBackdrop");
-const closeModalBtn = document.getElementById("closeModal");
-function openModal(no){
-  const r = recipes.find(x=>x.No===no);
-  if(!r) return;
-  document.getElementById("modalTitle").textContent = r.title;
-  document.getElementById("modalSubtitle").textContent = r.flavortxt||"";
-  document.getElementById("modalIngredients").innerHTML = r.ingredients ? `<ul>${r.ingredients.map(i=>`<li>${i}</li>`).join("")}</ul>` : "";
-  document.getElementById("modalRecipe").innerHTML = r.recipe ? `<ol>${r.recipe.map(s=>`<li>${s}</li>`).join("")}</ol>` : "";
-  document.getElementById("modalMemo").innerHTML = r.memo || "";
-  document.getElementById("modalProps").textContent = JSON.stringify(r.props||{},null,2);
-  document.getElementById("modalPictures").innerHTML = r.pictures ? r.pictures.map(p=>p?`<img src="${p}" style="width:60px;margin:2px;border-radius:4px">`:"—").join("") : "—";
-  modalBackdrop.style.display="flex";
-  modalBackdrop.setAttribute("aria-hidden","false");
-}
-closeModalBtn.addEventListener("click",()=>{modalBackdrop.style.display="none";modalBackdrop.setAttribute("aria-hidden","true")});
-document.getElementById("closeFooter").addEventListener("click",()=>{modalBackdrop.style.display="none";modalBackdrop.setAttribute("aria-hidden","true")});
-reloadBtn.addEventListener("click",loadData);
-q.addEventListener("input",renderTable);
-filterType.addEventListener("change",renderTable);
-sortBy.addEventListener("change",renderTable);
+  qInput.addEventListener('input', renderTable);
+  filterType.addEventListener('change', renderTable);
+  sortBy.addEventListener('change', renderTable);
+  reloadBtn.addEventListener('click', loadData);
 
-loadData();
+  loadData();
+})();
 </script>
 </body>
 </html>
