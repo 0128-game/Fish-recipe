@@ -32,7 +32,16 @@
         "しょうがを多めに入れると臭みがやわらぐ。",
         "煮詰めすぎないように注意。"
       ],
-      "pictures": [null, null, null, null, null, null, null, null]
+      "pictures": [
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png"
+      ]
     },
     "2": {
       "No": "2",
@@ -65,7 +74,16 @@
         "下味は塩だけでも十分。",
         "骨を抜くと食べやすい。"
       ],
-      "pictures": [null, null, null, null, null, null, null, null]
+      "pictures": [
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png"
+      ]
     },
     "3": {
       "No": "3",
@@ -96,7 +114,16 @@
         "焦げないように火加減に注意。",
         "シンプルな味つけで鮭の旨味を引き立てる。"
       ],
-      "pictures": [null, null, null, null, null, null, null, null]
+      "pictures": [
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png"
+      ]
     },
     "4": {
       "No": "4",
@@ -130,7 +157,16 @@
         "煮崩れやすいので、途中であまり触らない。",
         "しょうがは多めが香りよく仕上がる。"
       ],
-      "pictures": [null, null, null, null, null, null, null, null]
+      "pictures": [
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png"
+      ]
     },
     "5": {
       "No": "5",
@@ -160,149 +196,16 @@
         "焼きすぎると身が固くなるので注意。",
         "大根おろしを添えるとよりおいしい。"
       ],
-      "pictures": [null, null, null, null, null, null, null, null]
-    }
-  },
-  "preparations": {
-    "P1": {
-      "No": "P1",
-      "type": "pre",
-      "flavortxt": "新鮮なサバのうろこと内臓を丁寧に処理する",
-      "title": "サバの下処理",
-      "fish-name": ["サバ"],
-      "feature": ["脂がのっていて旨味が強い", "骨がしっかりしている"],
-      "season": ["秋", "冬"],
-      "difficulty": 2,
-      "cost": 50,
-      "time": 10,
-      "pre-recipe": null,
-      "ingredients": {
-        "サバ": "1尾",
-        "塩": "少々",
-        "包丁": "1本",
-        "まな板": "1枚"
-      },
-      "props": ["包丁", "まな板", "キッチンペーパー"],
-      "recipe": [
-        "サバのうろこを取り、腹を開く。",
-        "内臓を取り除き、水で洗う。",
-        "水分を拭き取って下処理完了。"
-      ],
-      "memo": [
-        "鮮度の良いものを使用する。",
-        "骨に注意して処理する。"
-      ],
-      "pictures": [null, null, null, null, null, null]
-    },
-    "P2": {
-      "No": "P2",
-      "type": "pre",
-      "flavortxt": "骨が少なく扱いやすいアジを手早く下処理",
-      "title": "アジの下処理",
-      "fish-name": ["アジ"],
-      "feature": ["青魚特有の風味", "骨が少なく扱いやすい"],
-      "season": ["春", "初夏"],
-      "difficulty": 2,
-      "cost": 40,
-      "time": 10,
-      "pre-recipe": null,
-      "ingredients": {
-        "アジ": "2尾",
-        "塩": "少々",
-        "包丁": "1本",
-        "まな板": "1枚"
-      },
-      "props": ["包丁", "まな板", "キッチンペーパー"],
-      "recipe": [
-        "アジの頭を落とし、腹を開く。",
-        "内臓を取り出し、水で洗う。",
-        "水気をよく拭いて下処理完了。"
-      ],
-      "memo": [
-        "骨を丁寧に取り除くと調理がしやすい。"
-      ],
-      "pictures": [null, null, null, null, null, null]
-    },
-    "P3": {
-      "No": "P3",
-      "type": "pre",
-      "flavortxt": "鮭を焼く前に余分な水分を取り、塩で下味をつける",
-      "title": "サケの下処理",
-      "fish-name": ["サケ"],
-      "feature": ["淡白な味わい", "身が崩れにくい"],
-      "season": ["秋"],
-      "difficulty": 1,
-      "cost": 30,
-      "time": 5,
-      "pre-recipe": null,
-      "ingredients": {
-        "サケ": "2切れ",
-        "塩": "少々"
-      },
-      "props": ["キッチンペーパー"],
-      "recipe": [
-        "サケの切り身を水で軽く洗う。",
-        "水気をキッチンペーパーで拭く。",
-        "塩をふって5分ほど置く。"
-      ],
-      "memo": [
-        "焼く直前まで冷蔵庫で保管。"
-      ],
-      "pictures": [null, null, null, null, null, null]
-    },
-    "P4": {
-      "No": "P4",
-      "type": "pre",
-      "flavortxt": "柔らかいイワシを煮付けやすい状態に整える",
-      "title": "イワシの下処理",
-      "fish-name": ["イワシ"],
-      "feature": ["身が柔らかく、旨味が強い"],
-      "season": ["春", "夏"],
-      "difficulty": 2,
-      "cost": 40,
-      "time": 10,
-      "pre-recipe": null,
-      "ingredients": {
-        "イワシ": "4尾",
-        "包丁": "1本",
-        "まな板": "1枚"
-      },
-      "props": ["包丁", "まな板", "キッチンペーパー"],
-      "recipe": [
-        "イワシの頭と内臓を取り除く。",
-        "手開きして骨を整える。",
-        "水分を拭いて下処理完了。"
-      ],
-      "memo": [
-        "煮崩れしやすいので丁寧に扱う。"
-      ],
-      "pictures": [null, null, null, null, null, null]
-    },
-    "P5": {
-      "No": "P5",
-      "type": "pre",
-      "flavortxt": "ホッケの開きを焼く前に塩をふって下味をつける",
-      "title": "ホッケの下処理",
-      "fish-name": ["ホッケ"],
-      "feature": ["身が厚く、ふっくらとした食感"],
-      "season": ["冬"],
-      "difficulty": 1,
-      "cost": 20,
-      "time": 5,
-      "pre-recipe": null,
-      "ingredients": {
-        "ホッケ": "1尾（開き）",
-        "塩": "少々"
-      },
-      "props": ["キッチンペーパー"],
-      "recipe": [
-        "ホッケの水分を拭く。",
-        "塩を両面にふり、5分ほど置く。"
-      ],
-      "memo": [
-        "焼く直前に塩を調整するとよい。"
-      ],
-      "pictures": [null, null, null, null, null, null]
+      "pictures": [
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png",
+        "https://0128-game.github.io/Fish-recipe/picture/noimage.png"
+      ]
     }
   }
 }
