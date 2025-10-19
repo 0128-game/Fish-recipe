@@ -438,94 +438,124 @@ footer{margin-top:14px;display:flex;justify-content:space-between;align-items:ce
     tbody.appendChild(fragment);
   }
 
-  // opens modal with item details
-  function openModal(item){
-    modalBackdrop.style.display = 'flex';
-    modalBackdrop.setAttribute('aria-hidden', 'false');
+// opens modal with item details
+function openModal(item){
+    modalBackdrop.style.display = 'flex';
+    modalBackdrop.setAttribute('aria-hidden', 'false');
 
-    modalTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
-    modalSubtitle.textContent = item.flavortxt || '';
+    modalTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
+    modalSubtitle.textContent = item.flavortxt || '';
 
-    // meta info
-    metaInfo.innerHTML = '';
-    metaInfo.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'small'));
-    metaInfo.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'small'));
-    metaInfo.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'small'));
-    metaInfo.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'small'));
-    metaInfo.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'small'));
-    modalTitle.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'small'));
-    metaInfo.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'small'));
+    // meta info
+    metaInfo.innerHTML = '';
+    metaInfo.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'small'));
+    metaInfo.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'small'));
+    metaInfo.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'small'));
+    metaInfo.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'small'));
+    metaInfo.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'small'));
+    modalTitle.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'small'));
+    metaInfo.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'small'));
 
-    // ingredients
-    modalIngredients.innerHTML = '';
-    const ing = item.ingredients || {};
-    if (Object.keys(ing).length === 0){
-      modalIngredients.appendChild(elText('div','(材料なし)','muted'));
-    } else {
-      const ul = document.createElement('ul');
-      for (const k of Object.keys(ing)){
-        const li = document.createElement('li');
-        li.textContent = k + ': ' + (ing[k] || '');
-        ul.appendChild(li);
-      }
-      modalIngredients.appendChild(ul);
-    }
+    // ingredients
+    modalIngredients.innerHTML = '';
+    const ing = item.ingredients || {};
+    if (Object.keys(ing).length === 0){
+        modalIngredients.appendChild(elText('div','(材料なし)','muted'));
+    } else {
+        const ul = document.createElement('ul');
+        for (const k of Object.keys(ing)){
+            const li = document.createElement('li');
+            li.textContent = k + ': ' + (ing[k] || '');
+            ul.appendChild(li);
+        }
+        modalIngredients.appendChild(ul);
+    }
 
-    // recipe steps
-    modalRecipe.innerHTML = '';
-    const rec = item.recipe || [];
-    if (!Array.isArray(rec) || rec.length === 0){
-      modalRecipe.appendChild(elText('div','(手順なし)','muted'));
-    } else {
-      const ol = document.createElement('ol');
-      for (const step of rec){
-        const li = document.createElement('li');
-        li.textContent = step;
-        ol.appendChild(li);
-      }
-      modalRecipe.appendChild(ol);
-    }
+    // recipe steps
+    modalRecipe.innerHTML = '';
+    const rec = item.recipe || [];
+    if (!Array.isArray(rec) || rec.length === 0){
+        modalRecipe.appendChild(elText('div','(手順なし)','muted'));
+    } else {
+        const ol = document.createElement('ol');
+        for (const step of rec){
+            const li = document.createElement('li');
+            li.textContent = step;
+            ol.appendChild(li);
+        }
+        modalRecipe.appendChild(ol);
+    }
 
-    // memo
-    modalMemo.innerHTML = '';
-    const memo = item.memo || [];
-    if (!Array.isArray(memo) || memo.length === 0){
-      modalMemo.appendChild(elText('div','(メモなし)','muted'));
-    } else {
-      const ulm = document.createElement('ul');
-      for (const m of memo){
-        ulm.appendChild(elText('li', m));
-      }
-      modalMemo.appendChild(ulm);
-    }
+    // memo
+    modalMemo.innerHTML = '';
+    const memo = item.memo || [];
+    if (!Array.isArray(memo) || memo.length === 0){
+        modalMemo.appendChild(elText('div','(メモなし)','muted'));
+    } else {
+        const ulm = document.createElement('ul');
+        for (const m of memo){
+            ulm.appendChild(elText('li', m));
+        }
+        modalMemo.appendChild(ulm);
+    }
 
-    // props (pre only)
-    modalProps.innerHTML = '';
-    if (Array.isArray(item.props) && item.props.length){
-      const ulp = document.createElement('ul');
-      for (const p of item.props) ulp.appendChild(elText('li', p));
-      modalProps.appendChild(ulp);
-    } else {
-      modalProps.appendChild(elText('div', '(なし)', 'muted'));
-    }
+    // props (pre only)
+    modalProps.innerHTML = '';
+    if (Array.isArray(item.props) && item.props.length){
+        const ulp = document.createElement('ul');
+        for (const p of item.props) ulp.appendChild(elText('li', p));
+        modalProps.appendChild(ulp);
+    } else {
+        modalProps.appendChild(elText('div', '(なし)', 'muted'));
+    }
 
-    // pictures
-    modalPictures.innerHTML = '';
-    const pics = item.pictures || [];
-    if (Array.isArray(pics) && pics.length){
-      const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
-      modalPictures.appendChild(elText('pre', lines.join('\n')));
-    } else {
-      modalPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
-    }
+    // PICTURE DISPLAY: 画像をモーダルのヘッダー部分に表示する (★ここが新しい追加コードです)
+    const modalImageContainer = document.createElement('div');
+    modalImageContainer.style.textAlign = 'center';
+    modalImageContainer.style.marginBottom = '15px';
 
-    // open raw link points to detected path
-    if (currentRawPath){
-      openRaw.onclick = ()=> { window.open(currentRawPath, '_blank'); };
-    } else {
-      openRaw.onclick = ()=> {};
-    }
-  }
+    const modalImg = document.createElement('img');
+    modalImg.style.maxWidth = '100%';
+    modalImg.style.maxHeight = '250px'; // モーダル内の画像の最大高さを設定
+    modalImg.style.width = 'auto';
+    modalImg.style.objectFit = 'contain';
+    modalImg.style.borderRadius = '8px';
+    modalImg.style.border = '1px solid #ddd';
+
+    const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
+    
+    let imgSrc = '';
+    if (firstPic && typeof firstPic === 'string'){
+        imgSrc = firstPic;
+    } else {
+        // null または配列が存在しない場合、代替画像を表示
+        imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+    }
+    
+    modalImg.src = imgSrc;
+    modalImg.alt = item.title || '画像';
+    
+    modalImageContainer.appendChild(modalImg);
+    // 画像をモーダルのサブタイトル (modalSubtitle) の直下に挿入
+    modalSubtitle.after(modalImageContainer);
+    
+    // pictures (RAW LIST): 元のピクチャーリスト表示も残しておきます
+    modalPictures.innerHTML = '';
+    const pics = item.pictures || [];
+    if (Array.isArray(pics) && pics.length){
+        const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+        modalPictures.appendChild(elText('pre', lines.join('\n')));
+    } else {
+        modalPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+    }
+
+    // open raw link points to detected path
+    if (currentRawPath){
+        openRaw.onclick = ()=> { window.open(currentRawPath, '_blank'); };
+    } else {
+        openRaw.onclick = ()=> {};
+    }
+}
 
   function closeModal(){
     modalBackdrop.style.display = 'none';
