@@ -60,6 +60,26 @@ button:disabled{opacity:.6;cursor:not-allowed}
 main{
   background:transparent;
 }
+/* ★★★ hidden クラス: 要素を完全に非表示にする ★★★ */
+.hidden {
+    display: none !important;
+}
+/* ★★★ list-view クラス: リスト表示時に詳細を非表示にし、コントロールを表示する ★★★ */
+.list-view header {
+    display: flex; /* リストヘッダーを表示 */
+}
+.list-view .detail-container {
+    display: none; /* 詳細を非表示 */
+}
+/* ★★★ detail-view クラス: 詳細表示時にリストとコントロールを非表示にする ★★★ */
+.detail-view header {
+    display: none; /* リストヘッダーを非表示 */
+}
+.detail-view table {
+    display: none; /* テーブルを非表示 */
+}
+
+
 table{
   width:100%;
   border-collapse:collapse;
@@ -100,23 +120,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 .muted{color:var(--muted);font-size:0.85rem}
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
 .actions button{margin-right:6px}
-/* 詳細ボタン（<a>タグ）のスタイル */
-.actions a.btn-view-detail {
-  display: inline-block;
-  padding: 5px 8px;
-  font-size: 0.85rem;
-  margin-right: 5px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: white;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.actions a.btn-view-detail:hover {
-  background: #1a4f80;
-}
 .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
 .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
 .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
@@ -131,9 +134,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   border: 1px solid #eee;
 }
 
-/* --- ★ 詳細コンテナ（DOM操作で表示する領域）のスタイル (ここから追加) ★ --- */
+/* --- 詳細コンテナ（DOM操作で表示する領域）のスタイル --- */
 .detail-container{
-    margin-top: 25px;
+    margin-top: 0; /* ページ全体を使うためマージンを削除 */
     padding: 20px;
     background: var(--card);
     border-radius: 10px;
@@ -182,7 +185,21 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 @media (max-width:700px){
     .detail-grid{grid-template-columns:1fr}
 }
-/* --- ★ 詳細コンテナのスタイル (ここまで) ★ --- */
+/* リストに戻るボタンのスタイル */
+.back-button {
+    background: var(--muted);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    float: right; /* タイトルと並べる場合はfloatかflexを使いますが、今回は目立たせるため独立させます */
+}
+/* floatを解除 */
+.detail-header::after {
+    content: "";
+    display: table;
+    clear: both;
+}
 
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
@@ -233,24 +250,36 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 </tbody>
         </table>
 
-        <div id="detailContainer" class="detail-container" style="display:none;">
-            <div class="detail-header">
-                <h2 id="detailTitle"></h2>
-                <div id="detailSubtitle" class="muted"></div>
-                <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
-                <div id="detailMeta" class="meta"></div>
-            </div>
-            
-            <div class="detail-grid">
-                <div class="detail-section">
-                    <h3 class="section-title">材料 (Ingredients)</h3>
-                    <div id="detailIngredients"></div>
-                </div>
-                <div class="detail-section">
-                    <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
-                    <div id="detailRecipe"></div>
-                </div>
-            </div>
+      <div id="detailContainer" class="detail-container hidden">
+    <div class="detail-header">
+        <button id="backToListBtn" class="back-button">← リストに戻る</button>
+        <h2 id="detailTitle"></h2>
+        <div id="detailSubtitle" class="muted"></div>
+        <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
+        <div id="detailMeta" class="meta"></div>
+    </div>
+    
+    <div class="detail-grid">
+        <div class="detail-section">
+            <h3 class="section-title">材料 (Ingredients)</h3>
+            <div id="detailIngredients"></div>
+        </div>
+        <div class="detail-section">
+            <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
+            <div id="detailRecipe"></div>
+        </div>
+    </div>
+    
+    <div class="detail-section">
+        <h3 class="section-title">メモ (Memo)</h3>
+        <div id="detailMemo"></div>
+    </div>
+    
+    <div class="detail-section">
+        <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
+        <div id="detailPictures"></div>
+    </div>
+</div>
             
             <div class="detail-section">
                 <h3 class="section-title">メモ (Memo)</h3>
@@ -280,7 +309,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         './recipes.json'
     ];
 
-    const app = document.getElementById('app');
+    const wrap = document.querySelector('.wrap'); // ★ .wrap要素を取得
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
     const filterType = document.getElementById('filterType');
@@ -288,7 +317,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const reloadBtn = document.getElementById('reloadBtn');
     const message = document.getElementById('message');
 
-    // ★ モーダル関連の変数を削除し、詳細コンテナの要素を追加 ★
+    // 詳細コンテナの要素
     const detailContainer = document.getElementById('detailContainer');
     const detailTitle = document.getElementById('detailTitle');
     const detailSubtitle = document.getElementById('detailSubtitle');
@@ -298,11 +327,24 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailRecipe = document.getElementById('detailRecipe');
     const detailMemo = document.getElementById('detailMemo');
     const detailPictures = document.getElementById('detailPictures');
-    // -----------------------------------------------------------
+    const backToListBtn = document.getElementById('backToListBtn'); // ★ 新しいボタン
 
     let rawData = null;
     let flatList = []; // merged list with type annotation
     let currentRawPath = null;
+    
+    // ★★★ 画面切り替えのコア関数 ★★★
+    function showList(){
+        wrap.classList.remove('detail-view');
+        wrap.classList.add('list-view');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showDetail(){
+        wrap.classList.remove('list-view');
+        wrap.classList.add('detail-view');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // Utility: safe text node creation
     function elText(tag, text, cls){
@@ -368,8 +410,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     // render table rows from list
     function renderTable(list){
         clearTable();
-        if (!Array.isArray(list) || list.length === 0){
-            tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; // colspan を 8 に変更
+        if (!ArrayArray(list) || list.length === 0){
+            tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; 
             return;
         }
         const fragment = document.createDocumentFragment();
@@ -446,7 +488,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             const viewBtn = document.createElement('button');
             viewBtn.textContent = '詳細';
             
-            // ★★★ displayDetail関数を呼び出すリスナーを設定 ★★★
+            // ★★★ displayDetail関数を呼び出すリスナーを設定し、詳細画面に切り替える ★★★
             viewBtn.addEventListener('click', ()=> displayDetail(item));
             
             tdActions.appendChild(viewBtn);
@@ -476,17 +518,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     // 詳細情報を同じページ内のコンテナに表示する関数
     function displayDetail(item){
-        // まず詳細コンテナを表示状態にする
-        detailContainer.style.display = 'block';
         
-        // スクロールして詳細情報が見えるようにする
-        detailContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 1. 画面を詳細表示に切り替える
+        showDetail(); 
 
-        // 1. ヘッダー情報
+        // 2. ヘッダー情報
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 2. メタ情報
+        // 3. メタ情報
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -496,7 +536,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'pill'));
 
-        // 3. メイン画像
+        // 4. メイン画像
         detailImageContainer.innerHTML = '';
         const mainImg = document.createElement('img');
         // CSSクラスは既存の.recipe-thumbと区別するためインラインで設定
@@ -522,7 +562,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailImageContainer.appendChild(mainImg);
 
 
-        // 4. 材料 (Ingredients)
+        // 5. 材料 (Ingredients)
         detailIngredients.innerHTML = '';
         const ing = item.ingredients || {};
         if (Object.keys(ing).length === 0){
@@ -537,7 +577,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailIngredients.appendChild(ul);
         }
 
-        // 5. 手順 (Recipe / Pre-Process)
+        // 6. 手順 (Recipe / Pre-Process)
         detailRecipe.innerHTML = '';
         const rec = item.recipe || [];
         if (!Array.isArray(rec) || rec.length === 0){
@@ -552,7 +592,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailRecipe.appendChild(ol);
         }
 
-        // 6. メモ (Memo)
+        // 7. メモ (Memo)
         detailMemo.innerHTML = '';
         const memo = item.memo || [];
         if (!Array.isArray(memo) || memo.length === 0){
@@ -565,7 +605,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailMemo.appendChild(ulm);
         }
 
-        // 7. 写真リンク / JSONデータ (Debug)
+        // 8. 写真リンク / JSONデータ (Debug)
         detailPictures.innerHTML = '';
         const pics = item.pictures || [];
         if (Array.isArray(pics) && pics.length){
@@ -578,6 +618,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     // filter/sort logic
     function applyFiltersAndRender(){
+        // ... (省略) ...
         const q = (qInput.value || '').trim().toLowerCase();
         const type = filterType.value;
         const sortVal = sortBy.value;
@@ -649,6 +690,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     reloadBtn.addEventListener('click', ()=> {
         loadData();
     });
+    
+    // ★★★ リストに戻るボタンのイベントリスナー ★★★
+    backToListBtn.addEventListener('click', ()=> {
+        showList();
+    });
 
     qInput.addEventListener('input', ()=> applyFiltersAndRender());
     filterType.addEventListener('change', ()=> applyFiltersAndRender());
@@ -667,10 +713,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
             }
             applyFiltersAndRender();
+            // データロード完了後、初期表示はリスト画面にする
+            showList();
         } catch (err){
             console.error(err);
             message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
             clearTable();
+            // エラー時は詳細画面は表示しない
+            wrap.classList.remove('detail-view');
         }
     }
 
