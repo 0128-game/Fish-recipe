@@ -78,13 +78,12 @@ thead th{
   top:0;
   z-index:1;
 }
-/* tbody tdのスタイルをPicture列表示用に上書き・調整します */
+/* tbody tdのスタイルをPicture列表示用に上書き・調整 */
 tbody td{
   padding:10px 12px;
   border-bottom:1px dashed #eee;
   vertical-align:top;
   font-size:0.95rem;
-  /* Picture列のために中央揃えを追加 */
   text-align: center;
 }
 /* 画像がある列（3番目）以外は左寄せに戻す */
@@ -101,135 +100,171 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 .muted{color:var(--muted);font-size:0.85rem}
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
 .actions button{margin-right:6px}
+/* 詳細ボタン（<a>タグ）のスタイル */
+.actions a.btn-view-detail {
+  display: inline-block;
+  padding: 5px 8px;
+  font-size: 0.85rem;
+  margin-right: 5px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.actions a.btn-view-detail:hover {
+  background: #1a4f80;
+}
 .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
 .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
 .type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-/* Picture列の画像スタイル (ここから追加) */
+/* Picture列の画像スタイル: 80px */
 .recipe-thumb{
-  width: 300px; /* 画像サイズを調整 */
-  height: 200px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   border-radius: 4px;
   display: block;
   margin: 0 auto;
   border: 1px solid #eee;
 }
-/* (ここまで追加) */
-/* modal */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(12,18,30,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000;
+
+/* --- ★ 詳細コンテナ（DOM操作で表示する領域）のスタイル (ここから追加) ★ --- */
+.detail-container{
+    margin-top: 25px;
+    padding: 20px;
+    background: var(--card);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-.modal{
-  width:100%;max-width:760px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(10,20,40,0.25);
-  max-height:90vh;overflow:auto;
+.detail-header{
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
 }
-.modal h2{margin:0 0 8px 0}
-.modal .meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
+.detail-header h2{
+    margin: 0 0 5px 0;
+    font-size: 1.6rem;
+    color: var(--accent);
 }
-.section-title{font-weight:700;margin:10px 0 6px 0}
-ul{margin:6px 0 12px 20px}
-pre{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #eef2f7}
-.small{font-size:0.85rem;color:var(--muted)}
-footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.meta{
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.detail-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.section-title{
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #222;
+    margin: 10px 0 6px 0;
+}
+.detail-section ul, .detail-section ol{
+    padding-left: 20px;
+    margin-top: 5px;
+}
+.detail-section pre{
+    white-space: pre-wrap;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #eef2f7;
+}
 @media (max-width:700px){
-  .grid{grid-template-columns:1fr}
-  header{align-items:center}
+    .detail-grid{grid-template-columns:1fr}
 }
+/* --- ★ 詳細コンテナのスタイル (ここまで) ★ --- */
+
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
 </head>
 <body>
-  <div class="wrap" id="app">
+<div class="wrap">
     <header>
-      <h1>魚料理レシピ一覧</h1>
-      <div class="controls" aria-hidden="false">
-        <label class="small" for="q">検索:</label>
-        <input id="q" type="search" placeholder="タイトル・魚名・特徴などを検索">
-        <label class="small" for="filterType">タイプ:</label>
-        <select id="filterType">
-          <option value="all">すべて</option>
-          <option value="recipe">料理 (recipe)</option>
-          <option value="pre">下処理 (pre)</option>
-        </select>
-        <label class="small" for="sortBy">並び替え:</label>
-        <select id="sortBy">
-          <option value="No">No（昇順）</option>
-          <option value="-No">No（降順）</option>
-          <option value="cost">費用（昇順）</option>
-          <option value="-cost">費用（降順）</option>
-          <option value="time">所要時間（昇順）</option>
-          <option value="-time">所要時間（降順）</option>
-        </select>
-        <button id="reloadBtn" title="再読み込み">再読み込み</button>
-      </div>
+        <h1>魚レシピ / 下処理管理</h1>
+        <div class="controls">
+            <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
+            <select id="filterType">
+                <option value="all">全て</option>
+                <option value="recipe">レシピ</option>
+                <option value="pre">下処理</option>
+            </select>
+            <select id="sortBy">
+                <option value="No">No (昇順)</option>
+                <option value="-No">No (降順)</option>
+                <option value="fish-name">魚名</option>
+                <option value="-difficulty">難易度 (難し)</option>
+                <option value="difficulty">難易度 (易し)</option>
+                <option value="time">時間 (短)</option>
+                <option value="-time">時間 (長)</option>
+                <option value="-cost">費用 (高)</option>
+                <option value="cost">費用 (安)</option>
+            </select>
+            <button id="reloadBtn">データ再読み込み</button>
+        </div>
     </header>
 
-    <main>
-      <div id="message" role="status" aria-live="polite" style="margin-bottom:10px"></div>
-
-      <div style="overflow:auto;border-radius:10px">
-        <table id="recipeTable" aria-describedby="message">
-<thead>
-  <tr>
-    <th style="width:80px">No</th>
-    <th style="width:80px">Type</th>
-    <th style="width:80px">Picture</th> <th>Title / flavortxt</th>
-    <th style="width:160px">魚 / 旬</th>
-    <th style="width:120px">難易度 / 時間</th>
-    <th style="width:120px">費用 / その他情報</th>
-    <th style="width:110px">操作</th>
-  </tr>
-</thead>
-          <tbody id="tbody"></tbody>
+    <main id="app">
+        <p id="message" class="muted">データを読み込み中です...</p>
+        
+        <table id="recipeTable">
+            <thead>
+                <tr>
+                    <th style="width:80px">No</th>
+                    <th style="width:80px">Type</th>
+                    <th style="width:80px">Picture</th> 
+                    <th>Title / flavortxt</th>
+                    <th style="width:160px">魚 / 旬</th>
+                    <th style="width:120px">難易度 / 時間</th>
+                    <th style="width:120px">費用 / その他情報</th>
+                    <th style="width:110px">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                </tbody>
         </table>
-      </div>
-    </main>
 
-    <!-- modal -->
-    <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-      <div class="modal" role="document" aria-labelledby="modalTitle">
-        <button id="closeModal" style="float:right;border:none;background:transparent;font-size:1.1rem;cursor:pointer">✕</button>
-        <h2 id="modalTitle"></h2>
-        <div id="modalSubtitle" class="small"></div>
-
-        <div class="meta" id="metaInfo"></div>
-
-        <div class="grid">
-          <div>
-            <div class="section-title">材料</div>
-            <div id="modalIngredients"></div>
-            <div class="section-title">手順</div>
-            <div id="modalRecipe"></div>
-          </div>
-          <div>
-            <div class="section-title">メモ / 追加情報</div>
-            <div id="modalMemo"></div>
-
-            <div class="section-title">その他 (props)</div>
-            <div id="modalProps" class="small"></div>
-
-            <div class="section-title">pictures</div>
-            <div id="modalPictures" class="small"></div>
-          </div>
+        <div id="detailContainer" class="detail-container" style="display:none;">
+            <div class="detail-header">
+                <h2 id="detailTitle"></h2>
+                <div id="detailSubtitle" class="muted"></div>
+                <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
+                <div id="detailMeta" class="meta"></div>
+            </div>
+            
+            <div class="detail-grid">
+                <div class="detail-section">
+                    <h3 class="section-title">材料 (Ingredients)</h3>
+                    <div id="detailIngredients"></div>
+                </div>
+                <div class="detail-section">
+                    <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
+                    <div id="detailRecipe"></div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3 class="section-title">メモ (Memo)</h3>
+                <div id="detailMemo"></div>
+            </div>
+            
+            <div class="detail-section">
+                <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
+                <div id="detailPictures"></div>
+            </div>
         </div>
-
-        <footer>
-          <div class="small">データソース: <code>docs/recipes.json</code></div>
-          <div>
-            <button id="openRaw">Raw 表示</button>
-            <button id="closeFooter">閉じる</button>
-          </div>
-        </footer>
-      </div>
-    </div>
-
-  </div>
-
-<script>
+        </main>
+</div>
+  <script>
 /*
   expectations:
    - JSON is an object with keys: "recipes" and "preparations"
@@ -238,446 +273,416 @@ footer{margin-top:14px;display:flex;justify-content:space-between;align-items:ce
 */
 
 (function(){
-  const tryPaths = [
-    'docs/recipes.json',
-    './docs/recipes.json',
-    '/recipes.json',
-    './recipes.json'
-  ];
+    const tryPaths = [
+        'docs/recipes.json',
+        './docs/recipes.json',
+        '/recipes.json',
+        './recipes.json'
+    ];
 
-  const app = document.getElementById('app');
-  const tbody = document.getElementById('tbody');
-  const qInput = document.getElementById('q');
-  const filterType = document.getElementById('filterType');
-  const sortBy = document.getElementById('sortBy');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const message = document.getElementById('message');
+    const app = document.getElementById('app');
+    const tbody = document.getElementById('tbody');
+    const qInput = document.getElementById('q');
+    const filterType = document.getElementById('filterType');
+    const sortBy = document.getElementById('sortBy');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const message = document.getElementById('message');
 
-  const modalBackdrop = document.getElementById('modalBackdrop');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalSubtitle = document.getElementById('modalSubtitle');
-  const modalIngredients = document.getElementById('modalIngredients');
-  const modalRecipe = document.getElementById('modalRecipe');
-  const modalMemo = document.getElementById('modalMemo');
-  const modalProps = document.getElementById('modalProps');
-  const modalPictures = document.getElementById('modalPictures');
-  const metaInfo = document.getElementById('metaInfo');
-  const openRaw = document.getElementById('openRaw');
-  const closeModalBtn = document.getElementById('closeModal');
-  const closeFooterBtn = document.getElementById('closeFooter');
+    // ★ モーダル関連の変数を削除し、詳細コンテナの要素を追加 ★
+    const detailContainer = document.getElementById('detailContainer');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailSubtitle = document.getElementById('detailSubtitle');
+    const detailImageContainer = document.getElementById('detailImageContainer');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailIngredients = document.getElementById('detailIngredients');
+    const detailRecipe = document.getElementById('detailRecipe');
+    const detailMemo = document.getElementById('detailMemo');
+    const detailPictures = document.getElementById('detailPictures');
+    // -----------------------------------------------------------
 
-  let rawData = null;
-  let flatList = []; // merged list with type annotation
-  let currentRawPath = null;
+    let rawData = null;
+    let flatList = []; // merged list with type annotation
+    let currentRawPath = null;
 
-  // Utility: safe text node creation
-  function elText(tag, text, cls){
-    const el = document.createElement(tag);
-    if (cls) el.className = cls;
-    el.textContent = (text === undefined || text === null) ? '' : String(text);
-    return el;
-  }
+    // Utility: safe text node creation
+    function elText(tag, text, cls){
+        const el = document.createElement(tag);
+        if (cls) el.className = cls;
+        el.textContent = (text === undefined || text === null) ? '' : String(text);
+        return el;
+    }
 
-  // Try fetching from multiple paths in order
-  async function fetchAny(paths){
-    for (const p of paths){
-      try {
-        const res = await fetch(p, {cache: "no-store"});
-        if (!res.ok) continue;
-        const json = await res.json();
-        currentRawPath = p;
-        return json;
-      } catch(e){
-        // continue to next path
-        console.warn('fetch failed for', p, e);
-      }
-    }
-    throw new Error('recipes.json を見つけられませんでした。期待する場所: ' + paths.join(', '));
-  }
-
-  // Normalize and flatten recipes + preparations into an array for table
-  function buildFlatList(data){
-    const list = [];
-    if (!data || typeof data !== 'object') return list;
-
-    // recipes
-    const recipes = data.recipes || {};
-    for (const key of Object.keys(recipes)){
-      const item = Object.assign({}, recipes[key]);
-      item._type = 'recipe';
-      // ensure No is string
-      item.No = item.No != null ? String(item.No) : String(key);
-      item._origKey = key;
-      list.push(item);
-    }
-    // preparations
-    const pres = data.preparations || {};
-    for (const key of Object.keys(pres)){
-      const item = Object.assign({}, pres[key]);
-      item._type = 'pre';
-      item.No = item.No != null ? String(item.No) : String(key);
-      item._origKey = key;
-      list.push(item);
-    }
-    return list;
-  }
-
-  // safe join array-like fields for display
-  function joinIfArray(val){
-    if (Array.isArray(val)) return val.join(', ');
-    if (val === undefined || val === null) return '';
-    return String(val);
-  }
-
-  function clearTable(){ tbody.innerHTML = ''; }
-
-  // render table rows from list
-  function renderTable(list){
-    clearTable();
-    if (!Array.isArray(list) || list.length === 0){
-      tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; // colspan を 8 に変更
-      return;
-    }
-    const fragment = document.createDocumentFragment();
-    for (const item of list){
-      const tr = document.createElement('tr');
-
-      // No
-      const tdNo = document.createElement('td');
-      tdNo.textContent = item.No || '-';
-      tr.appendChild(tdNo);
-
-      // Type
-      const tdType = document.createElement('td');
-      const span = document.createElement('span');
-      span.className = 'tag-type ' + (item._type === 'pre' ? 'type-pre' : 'type-recipe');
-      span.textContent = item._type;
-      tdType.appendChild(span);
-      tr.appendChild(tdType);
-      
-      // Picture (★ここが追加されたPicture列のコードです)
-      const tdPicture = document.createElement('td');
-      const img = document.createElement('img');
-      img.className = 'recipe-thumb';
-      
-      // pictures 配列の最初の要素を取得
-      const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
-      
-      // 画像ソースの決定
-      let imgSrc = '';
-      if (firstPic && typeof firstPic === 'string'){
-        // JSONに有効なURLが設定されている場合
-        imgSrc = firstPic;
-      } else {
-        // null または配列が存在しない場合、代替画像を表示 (絶対パスを使用)
-        imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
-      }
-      
-      img.src = imgSrc;
-      img.alt = item.title || '画像';
-      tdPicture.appendChild(img);
-      tr.appendChild(tdPicture); // Typeの後にPictureを挿入
-      
-      // Title and flavortxt
-      const tdTitle = document.createElement('td');
-      const title = elText('div', item.title || '(タイトルなし)', ''); title.style.fontWeight='700';
-      const flav = elText('div', item.flavortxt || '', 'muted');
-      tdTitle.appendChild(title);
-      tdTitle.appendChild(flav);
-      tr.appendChild(tdTitle);
-
-      // fish / season
-      const tdFish = document.createElement('td');
-      tdFish.appendChild(elText('div', joinIfArray(item['fish-name']) || '-', ''));
-      tdFish.appendChild(elText('div', joinIfArray(item.season) || '', 'muted'));
-      tr.appendChild(tdFish);
-
-      // difficulty / time
-      const tdDiff = document.createElement('td');
-      tdDiff.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-')));
-      tdDiff.appendChild(elText('div', '所要: ' + (item.time != null ? item.time + '分' : '-'), 'muted'));
-      tr.appendChild(tdDiff);
-
-      // cost / info line
-      const tdCost = document.createElement('td');
-      tdCost.appendChild(elText('div', '¥' + (item.cost != null ? item.cost : '-')));
-      const infoLine = (item._type === 'recipe')
-        ? ('食事: ' + (item.timing || '-'))
-        : ('特徴: ' + joinIfArray(item.feature));
-      tdCost.appendChild(elText('div', infoLine, 'muted'));
-      tr.appendChild(tdCost);
-
-      // actions
-      const tdActions = document.createElement('td');
-      tdActions.className = 'actions';
-      const viewBtn = document.createElement('button');
-      viewBtn.textContent = '詳細';
-      viewBtn.addEventListener('click', ()=> openModal(item));
-      tdActions.appendChild(viewBtn);
-
-      // quick copy JSON button
-      const copyBtn = document.createElement('button');
-      copyBtn.textContent = 'JSON';
-      copyBtn.style.background = '#6b7280';
-      copyBtn.addEventListener('click', ()=> {
-        const blob = new Blob([JSON.stringify(item, null, 2)], {type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `item-${item.No || item._origKey}.json`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      });
-      tdActions.appendChild(copyBtn);
-
-      tr.appendChild(tdActions);
-      fragment.appendChild(tr);
-    }
-    tbody.appendChild(fragment);
-  }
-
-// opens modal with item details
-function openModal(item){
-    modalBackdrop.style.display = 'flex';
-    modalBackdrop.setAttribute('aria-hidden', 'false');
-
-    modalTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
-    modalSubtitle.textContent = item.flavortxt || '';
-
-    // meta info
-    metaInfo.innerHTML = '';
-    metaInfo.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'small'));
-    metaInfo.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'small'));
-    metaInfo.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'small'));
-    metaInfo.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'small'));
-    metaInfo.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'small'));
-    modalTitle.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'small'));
-    metaInfo.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'small'));
-
-    // ingredients
-    modalIngredients.innerHTML = '';
-    const ing = item.ingredients || {};
-    if (Object.keys(ing).length === 0){
-        modalIngredients.appendChild(elText('div','(材料なし)','muted'));
-    } else {
-        const ul = document.createElement('ul');
-        for (const k of Object.keys(ing)){
-            const li = document.createElement('li');
-            li.textContent = k + ': ' + (ing[k] || '');
-            ul.appendChild(li);
+    // Try fetching from multiple paths in order
+    async function fetchAny(paths){
+        for (const p of paths){
+            try {
+                const res = await fetch(p, {cache: "no-store"});
+                if (!res.ok) continue;
+                const json = await res.json();
+                currentRawPath = p;
+                return json;
+            } catch(e){
+                // continue to next path
+                console.warn('fetch failed for', p, e);
+            }
         }
-        modalIngredients.appendChild(ul);
+        throw new Error('recipes.json を見つけられませんでした。期待する場所: ' + paths.join(', '));
     }
 
-    // recipe steps
-    modalRecipe.innerHTML = '';
-    const rec = item.recipe || [];
-    if (!Array.isArray(rec) || rec.length === 0){
-        modalRecipe.appendChild(elText('div','(手順なし)','muted'));
-    } else {
-        const ol = document.createElement('ol');
-        for (const step of rec){
-            const li = document.createElement('li');
-            li.textContent = step;
-            ol.appendChild(li);
+    // Normalize and flatten recipes + preparations into an array for table
+    function buildFlatList(data){
+        const list = [];
+        if (!data || typeof data !== 'object') return list;
+
+        // recipes
+        const recipes = data.recipes || {};
+        for (const key of Object.keys(recipes)){
+            const item = Object.assign({}, recipes[key]);
+            item._type = 'recipe';
+            // ensure No is string
+            item.No = item.No != null ? String(item.No) : String(key);
+            item._origKey = key;
+            list.push(item);
         }
-        modalRecipe.appendChild(ol);
-    }
-
-    // memo
-    modalMemo.innerHTML = '';
-    const memo = item.memo || [];
-    if (!Array.isArray(memo) || memo.length === 0){
-        modalMemo.appendChild(elText('div','(メモなし)','muted'));
-    } else {
-        const ulm = document.createElement('ul');
-        for (const m of memo){
-            ulm.appendChild(elText('li', m));
+        // preparations
+        const pres = data.preparations || {};
+        for (const key of Object.keys(pres)){
+            const item = Object.assign({}, pres[key]);
+            item._type = 'pre';
+            item.No = item.No != null ? String(item.No) : String(key);
+            item._origKey = key;
+            list.push(item);
         }
-        modalMemo.appendChild(ulm);
+        return list;
     }
 
-    // props (pre only)
-    modalProps.innerHTML = '';
-    if (Array.isArray(item.props) && item.props.length){
-        const ulp = document.createElement('ul');
-        for (const p of item.props) ulp.appendChild(elText('li', p));
-        modalProps.appendChild(ulp);
-    } else {
-        modalProps.appendChild(elText('div', '(なし)', 'muted'));
+    // safe join array-like fields for display
+    function joinIfArray(val){
+        if (Array.isArray(val)) return val.join(', ');
+        if (val === undefined || val === null) return '';
+        return String(val);
     }
 
-    // PICTURE DISPLAY: 画像をモーダルのヘッダー部分に表示する (★ここが新しい追加コードです)
-    const modalImageContainer = document.createElement('div');
-    modalImageContainer.style.textAlign = 'center';
-    modalImageContainer.style.marginBottom = '15px';
+    function clearTable(){ tbody.innerHTML = ''; }
 
-    const modalImg = document.createElement('img');
-    modalImg.style.maxWidth = '100%';
-    modalImg.style.maxHeight = '250px'; // モーダル内の画像の最大高さを設定
-    modalImg.style.width = 'auto';
-    modalImg.style.objectFit = 'contain';
-    modalImg.style.borderRadius = '8px';
-    modalImg.style.border = '1px solid #ddd';
+    // render table rows from list
+    function renderTable(list){
+        clearTable();
+        if (!Array.isArray(list) || list.length === 0){
+            tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; // colspan を 8 に変更
+            return;
+        }
+        const fragment = document.createDocumentFragment();
+        for (const item of list){
+            const tr = document.createElement('tr');
 
-    const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
-    
-    let imgSrc = '';
-    if (firstPic && typeof firstPic === 'string'){
-        imgSrc = firstPic;
-    } else {
-        // null または配列が存在しない場合、代替画像を表示
-        imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+            // No
+            const tdNo = document.createElement('td');
+            tdNo.textContent = item.No || '-';
+            tr.appendChild(tdNo);
+
+            // Type
+            const tdType = document.createElement('td');
+            const span = document.createElement('span');
+            span.className = 'tag-type ' + (item._type === 'pre' ? 'type-pre' : 'type-recipe');
+            span.textContent = item._type;
+            tdType.appendChild(span);
+            tr.appendChild(tdType);
+            
+            // Picture
+            const tdPicture = document.createElement('td');
+            const img = document.createElement('img');
+            img.className = 'recipe-thumb';
+            
+            const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
+            
+            let imgSrc = '';
+            if (firstPic && typeof firstPic === 'string'){
+                imgSrc = firstPic;
+            } else {
+                // null または配列が存在しない場合、代替画像を表示
+                imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+            }
+            
+            img.src = imgSrc;
+            img.alt = item.title || '画像';
+            tdPicture.appendChild(img);
+            tr.appendChild(tdPicture);
+
+            // Title and flavortxt
+            const tdTitle = document.createElement('td');
+            const title = elText('div', item.title || '(タイトルなし)', ''); title.style.fontWeight='700';
+            const flav = elText('div', item.flavortxt || '', 'muted');
+            tdTitle.appendChild(title);
+            tdTitle.appendChild(flav);
+            tr.appendChild(tdTitle);
+
+            // fish / season
+            const tdFish = document.createElement('td');
+            tdFish.appendChild(elText('div', joinIfArray(item['fish-name']) || '-', ''));
+            tdFish.appendChild(elText('div', joinIfArray(item.season) || '', 'muted'));
+            tr.appendChild(tdFish);
+
+            // difficulty / time
+            const tdDiff = document.createElement('td');
+            tdDiff.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-')));
+            tdDiff.appendChild(elText('div', '所要: ' + (item.time != null ? item.time + '分' : '-'), 'muted'));
+            tr.appendChild(tdDiff);
+
+            // cost / info line
+            const tdCost = document.createElement('td');
+            tdCost.appendChild(elText('div', '¥' + (item.cost != null ? item.cost : '-')));
+            const infoLine = (item._type === 'recipe')
+                ? ('食事: ' + (item.timing || '-'))
+                : ('特徴: ' + joinIfArray(item.feature));
+            tdCost.appendChild(elText('div', infoLine, 'muted'));
+            tr.appendChild(tdCost);
+
+            // actions
+            const tdActions = document.createElement('td');
+            tdActions.className = 'actions';
+            
+            // 詳細ボタン
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = '詳細';
+            
+            // ★★★ displayDetail関数を呼び出すリスナーを設定 ★★★
+            viewBtn.addEventListener('click', ()=> displayDetail(item));
+            
+            tdActions.appendChild(viewBtn);
+
+            // quick copy JSON button
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = 'JSON';
+            copyBtn.style.background = '#6b7280';
+            copyBtn.addEventListener('click', ()=> {
+                const blob = new Blob([JSON.stringify(item, null, 2)], {type:'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `item-${item.No || item._origKey}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+            tdActions.appendChild(copyBtn);
+
+            tr.appendChild(tdActions);
+            fragment.appendChild(tr);
+        }
+        tbody.appendChild(fragment);
     }
-    
-    modalImg.src = imgSrc;
-    modalImg.alt = item.title || '画像';
-    
-    modalImageContainer.appendChild(modalImg);
-    // 画像をモーダルのサブタイトル (modalSubtitle) の直下に挿入
-    modalSubtitle.after(modalImageContainer);
-    
-    // pictures (RAW LIST): 元のピクチャーリスト表示も残しておきます
-    modalPictures.innerHTML = '';
-    const pics = item.pictures || [];
-    if (Array.isArray(pics) && pics.length){
-        const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
-        modalPictures.appendChild(elText('pre', lines.join('\n')));
-    } else {
-        modalPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+
+    // 詳細情報を同じページ内のコンテナに表示する関数
+    function displayDetail(item){
+        // まず詳細コンテナを表示状態にする
+        detailContainer.style.display = 'block';
+        
+        // スクロールして詳細情報が見えるようにする
+        detailContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // 1. ヘッダー情報
+        detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
+        detailSubtitle.textContent = item.flavortxt || '';
+
+        // 2. メタ情報
+        detailMeta.innerHTML = '';
+        detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
+        detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
+        detailMeta.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'pill'));
+        detailMeta.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'pill'));
+        detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
+        detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
+        detailMeta.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'pill'));
+
+        // 3. メイン画像
+        detailImageContainer.innerHTML = '';
+        const mainImg = document.createElement('img');
+        // CSSクラスは既存の.recipe-thumbと区別するためインラインで設定
+        mainImg.style.maxWidth = '100%';
+        mainImg.style.maxHeight = '250px'; 
+        mainImg.style.width = 'auto';
+        mainImg.style.objectFit = 'contain';
+        mainImg.style.borderRadius = '8px';
+        mainImg.style.border = '1px solid #ddd';
+
+        const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
+        
+        let imgSrc = '';
+        if (firstPic && typeof firstPic === 'string'){
+            imgSrc = firstPic;
+        } else {
+            imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+        }
+        
+        mainImg.src = imgSrc;
+        mainImg.alt = item.title || '画像';
+        
+        detailImageContainer.appendChild(mainImg);
+
+
+        // 4. 材料 (Ingredients)
+        detailIngredients.innerHTML = '';
+        const ing = item.ingredients || {};
+        if (Object.keys(ing).length === 0){
+            detailIngredients.appendChild(elText('div','(材料なし)','muted'));
+        } else {
+            const ul = document.createElement('ul');
+            for (const k of Object.keys(ing)){
+                const li = document.createElement('li');
+                li.textContent = k + ': ' + (ing[k] || '');
+                ul.appendChild(li);
+            }
+            detailIngredients.appendChild(ul);
+        }
+
+        // 5. 手順 (Recipe / Pre-Process)
+        detailRecipe.innerHTML = '';
+        const rec = item.recipe || [];
+        if (!Array.isArray(rec) || rec.length === 0){
+            detailRecipe.appendChild(elText('div','(手順なし)','muted'));
+        } else {
+            const ol = document.createElement('ol');
+            for (const step of rec){
+                const li = document.createElement('li');
+                li.textContent = step;
+                ol.appendChild(li);
+            }
+            detailRecipe.appendChild(ol);
+        }
+
+        // 6. メモ (Memo)
+        detailMemo.innerHTML = '';
+        const memo = item.memo || [];
+        if (!Array.isArray(memo) || memo.length === 0){
+            detailMemo.appendChild(elText('div','(メモなし)','muted'));
+        } else {
+            const ulm = document.createElement('ul');
+            for (const m of memo){
+                ulm.appendChild(elText('li', m));
+            }
+            detailMemo.appendChild(ulm);
+        }
+
+        // 7. 写真リンク / JSONデータ (Debug)
+        detailPictures.innerHTML = '';
+        const pics = item.pictures || [];
+        if (Array.isArray(pics) && pics.length){
+            const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+            detailPictures.appendChild(elText('pre', lines.join('\n')));
+        } else {
+            detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+        }
     }
 
-    // open raw link points to detected path
-    if (currentRawPath){
-        openRaw.onclick = ()=> { window.open(currentRawPath, '_blank'); };
-    } else {
-        openRaw.onclick = ()=> {};
+    // filter/sort logic
+    function applyFiltersAndRender(){
+        const q = (qInput.value || '').trim().toLowerCase();
+        const type = filterType.value;
+        const sortVal = sortBy.value;
+
+        let list = flatList.slice();
+
+        // filter by type
+        if (type !== 'all') list = list.filter(i => i._type === type);
+
+        // search across several fields (強化された部分)
+        if (q){
+            list = list.filter(item => {
+                // 検索対象のフィールドを全て結合
+                const parts = [
+                    item.title, item.flavortxt,
+                    joinIfArray(item['fish-name']),
+                    joinIfArray(item.feature),
+                    joinIfArray(item.season),
+                    item.No,
+                    // 材料のキー名（例: サバ, 味噌）
+                    Object.keys(item.ingredients || {}).join(' '),
+                    // 手順 (recipe)
+                    joinIfArray(item.recipe),
+                    // メモ (memo)
+                    joinIfArray(item.memo),
+                    // 道具 (props, preのみ)
+                    joinIfArray(item.props)
+                ];
+                const hay = parts.filter(Boolean).join(' ').toLowerCase();
+                return hay.includes(q);
+            });
+        }
+
+        // sort
+        const desc = sortVal.startsWith('-');
+        const key = desc ? sortVal.slice(1) : sortVal;
+        list.sort((a,b)=>{
+            // numeric-aware where possible
+            const av = a[key];
+            const bv = b[key];
+            // No の並び替えロジックの改善 (P1, P2, 1, 2)
+            if (key === 'No'){
+                // "P1" -> 1.5, "1" -> 1 のようにしてPと数字を分離して比較
+                const extractNum = (val) => {
+                    const s = String(val||'');
+                    const isPre = s.startsWith('P');
+                    const num = parseInt(s.replace(/^P/,'') || '0', 10);
+                    // 'P' 付きは .5 で表現して通常の番号より前に来るようにする
+                    return isPre ? num + 0.5 : num;
+                };
+                const na = extractNum(av);
+                const nb = extractNum(bv);
+                return desc ? nb - na : na - nb;
+            }
+            const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
+            const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
+            if (!isFinite(an) || !isFinite(bn)){
+                // fallback string compare
+                return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+            }
+            return desc ? bn - an : an - bn;
+        });
+
+        renderTable(list);
+        message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
     }
-}
 
-  function closeModal(){
-    modalBackdrop.style.display = 'none';
-    modalBackdrop.setAttribute('aria-hidden', 'true');
-  }
+    // reload button
+    reloadBtn.addEventListener('click', ()=> {
+        loadData();
+    });
 
-  closeModalBtn.addEventListener('click', closeModal);
-  closeFooterBtn.addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', (e)=> {
-    if (e.target === modalBackdrop) closeModal();
-  });
-  document.addEventListener('keydown', (e)=> {
-    if (e.key === 'Escape') closeModal();
-  });
+    qInput.addEventListener('input', ()=> applyFiltersAndRender());
+    filterType.addEventListener('change', ()=> applyFiltersAndRender());
+    sortBy.addEventListener('change', ()=> applyFiltersAndRender());
 
-  // filter/sort logic
-  function applyFiltersAndRender(){
-    const q = (qInput.value || '').trim().toLowerCase();
-    const type = filterType.value;
-    const sortVal = sortBy.value;
+    // main loader
+    async function loadData(){
+        message.textContent = '読み込み中...';
+        try {
+            const json = await fetchAny(tryPaths);
+            rawData = json;
+            flatList = buildFlatList(json);
+            if (flatList.length === 0){
+                message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
+            } else {
+                message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
+            }
+            applyFiltersAndRender();
+        } catch (err){
+            console.error(err);
+            message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
+            clearTable();
+        }
+    }
 
-    let list = flatList.slice();
+    // initial load
+    loadData();
 
-    // filter by type
-    if (type !== 'all') list = list.filter(i => i._type === type);
-
-    // search across several fields (強化された部分)
-    if (q){
-      list = list.filter(item => {
-        // 検索対象のフィールドを全て結合
-        const parts = [
-          item.title, item.flavortxt,
-          joinIfArray(item['fish-name']),
-          joinIfArray(item.feature),
-          joinIfArray(item.season),
-          item.No,
-          // 材料のキー名（例: サバ, 味噌）
-          Object.keys(item.ingredients || {}).join(' '),
-          // 手順 (recipe)
-          joinIfArray(item.recipe),
-          // メモ (memo)
-          joinIfArray(item.memo),
-          // 道具 (props, preのみ)
-          joinIfArray(item.props)
-        ];
-        const hay = parts.filter(Boolean).join(' ').toLowerCase();
-        return hay.includes(q);
-      });
-    }
-
-    // sort
-    const desc = sortVal.startsWith('-');
-    const key = desc ? sortVal.slice(1) : sortVal;
-    list.sort((a,b)=>{
-      // numeric-aware where possible
-      const av = a[key];
-      const bv = b[key];
-      // No の並び替えロジックの改善 (P1, P2, 1, 2)
-      if (key === 'No'){
-        // "P1" -> 1.5, "1" -> 1 のようにしてPと数字を分離して比較
-        const extractNum = (val) => {
-          const s = String(val||'');
-          const isPre = s.startsWith('P');
-          const num = parseInt(s.replace(/^P/,'') || '0', 10);
-          // 'P' 付きは .5 で表現して通常の番号より前に来るようにする
-          return isPre ? num + 0.5 : num;
-        };
-        const na = extractNum(av);
-        const nb = extractNum(bv);
-        return desc ? nb - na : na - nb;
-      }
-      const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
-      const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
-      if (!isFinite(an) || !isFinite(bn)){
-        // fallback string compare
-        return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
-      }
-      return desc ? bn - an : an - bn;
-    });
-
-    renderTable(list);
-    message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
-  }
-
-  // reload button
-  reloadBtn.addEventListener('click', ()=> {
-    loadData();
-  });
-
-  qInput.addEventListener('input', ()=> applyFiltersAndRender());
-  filterType.addEventListener('change', ()=> applyFiltersAndRender());
-  sortBy.addEventListener('change', ()=> applyFiltersAndRender());
-
-  // main loader
-  async function loadData(){
-    message.textContent = '読み込み中...';
-    try {
-      const json = await fetchAny(tryPaths);
-      rawData = json;
-      flatList = buildFlatList(json);
-      if (flatList.length === 0){
-        message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
-      } else {
-        message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
-      }
-      applyFiltersAndRender();
-    } catch (err){
-      console.error(err);
-      message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
-      clearTable();
-    }
-  }
-
-  // initial load
-  loadData();
-
-  // Expose for debug on window
-  window._recipesApp = {
-    loadData,
-    getRaw: ()=> rawData,
-    getFlat: ()=> flatList
-  };
+    // Expose for debug on window
+    window._recipesApp = {
+        loadData,
+        getRaw: ()=> rawData,
+        getFlat: ()=> flatList
+    };
 })();
 </script>
 </body>
