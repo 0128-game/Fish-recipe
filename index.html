@@ -153,7 +153,7 @@
             <tr>
               <th style="width:80px">No</th>
               <th style="width:80px">Type</th>
-              <th>picture</th>
+              <th style="width:80px">picture</th>
               <th>Title / flavortxt</th>
               <th style="width:160px">魚 / 旬</th>
               <th style="width:120px">難易度 / 時間</th>
@@ -312,7 +312,7 @@
   function renderTable(list){
     clearTable();
     if (!Array.isArray(list) || list.length === 0){
-      tbody.innerHTML = '<tr><td colspan="7" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
       return;
     }
     const fragment = document.createDocumentFragment();
@@ -331,6 +331,12 @@
       span.textContent = item._type;
       tdType.appendChild(span);
       tr.appendChild(tdType);
+
+      // ===== Insert an EMPTY picture cell here so picture column remains blank =====
+      const tdPicEmpty = document.createElement('td');
+      // leave it blank intentionally
+      tr.appendChild(tdPicEmpty);
+      // ==========================================================================
 
       // Title and flavortxt
       const tdTitle = document.createElement('td');
