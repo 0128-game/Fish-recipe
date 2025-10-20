@@ -494,10 +494,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     function clearTable(){ tbody.innerHTML = ''; }
 
-    // render table rows from list
+  // render table rows from list
     function renderTable(list){
         clearTable();
-     if (!Array.isArray(list) || list.length === 0){
+        if (!Array.isArray(list) || list.length === 0){
             tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; 
             return;
         }
@@ -529,7 +529,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             if (firstPic && typeof firstPic === 'string'){
                 imgSrc = firstPic;
             } else {
-                // null または配列が存在しない場合、代替画像を表示
                 imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
             }
             
@@ -567,20 +566,39 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             tdCost.appendChild(elText('div', infoLine, 'muted'));
             tr.appendChild(tdCost);
 
-// actions
+            // actions
             const tdActions = document.createElement('td');
             tdActions.className = 'actions';
             
-            // 詳細ボタン (変更なし)
+            // ★★★ 修正箇所: 詳細ボタンの挙動を変更 ★★★
             const viewBtn = document.createElement('button');
             viewBtn.textContent = '詳細';
-            viewBtn.addEventListener('click', ()=> displayDetail(item));
+            
+            viewBtn.addEventListener('click', ()=> {
+                // レシピであり、かつ下処理が設定されている場合
+                if (item._type === 'recipe' && item['pre-recipe']) {
+                    const preRecipeName = item['pre-recipe'];
+                    // flatListから対応する下処理アイテムを探す
+                    const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+                    
+                    if (preItem) {
+                        // 下処理が見つかった場合、そちらの詳細画面に遷移
+                        displayDetail(preItem);
+                        return; // 処理を終了
+                    }
+                }
+                
+                // それ以外の場合（下処理アイテム、または下処理のないレシピ）、自分の詳細画面に遷移
+                displayDetail(item);
+            });
+            
             tdActions.appendChild(viewBtn);
+            // ★★★ 修正箇所終了 ★★★
 
-            // ★★★ 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン ★★★
+
+            // 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン (以前の修正を保持)
             if (item._type === 'recipe' && item['pre-recipe']) {
-                const preRecipeName = item['pre-recipe']; // 下処理のタイトル名を取得
-                // flatListから対応する下処理アイテムを探す
+                const preRecipeName = item['pre-recipe'];
                 const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
                 
                 if (preItem) {
@@ -592,7 +610,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 }
             }
             
-            // ★★★ 変更: JSONボタンを印刷ボタンに置き換え ★★★
+            // 変更: JSONボタンを印刷ボタンに置き換え (以前の修正を保持)
             const printBtn = document.createElement('button');
             printBtn.textContent = '印刷';
             printBtn.style.background = '#a0aec0'; // 薄いグレー
@@ -610,7 +628,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
         tbody.appendChild(fragment);
     }
-
 // Utility: 画像を表示するエレメントを作成する関数 (変更なし)
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
