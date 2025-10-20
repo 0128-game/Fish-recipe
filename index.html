@@ -468,7 +468,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     // render table rows from list
     function renderTable(list){
         clearTable();
-        if (!ArrayArray(list) || list.length === 0){
+     if (!Array.isArray(list) || list.length === 0){
             tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; 
             return;
         }
