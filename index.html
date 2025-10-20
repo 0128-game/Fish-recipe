@@ -349,46 +349,39 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </div>
 </main>
 </div>
-  <script>
-/*
-  expectations:
-   - JSON is an object with keys: "recipes" and "preparations"
-   - We'll attempt several common paths to find the JSON on GitHub Pages.
-   - Defensive coding: many fields may be missing; we'll fallback to sensible defaults.
-*/
+  (function(){
+    const tryPaths = [
+        'docs/recipes.json',
+        './docs/recipes.json',
+        '/recipes.json',
+        './recipes.json'
+    ];
 
-(function(){
-    const tryPaths = [
-        'docs/recipes.json',
-        './docs/recipes.json',
-        '/recipes.json',
-        './recipes.json'
-    ];
+    const wrap = document.getElementById('wrap');
+    const tbody = document.getElementById('tbody');
+    const qInput = document.getElementById('q');
+    const filterType = document.getElementById('filterType');
+    const sortBy = document.getElementById('sortBy');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const message = document.getElementById('message');
 
-    const wrap = document.getElementById('wrap');
-    const tbody = document.getElementById('tbody');
-    const qInput = document.getElementById('q');
-    const filterType = document.getElementById('filterType');
-    const sortBy = document.getElementById('sortBy');
-    const reloadBtn = document.getElementById('reloadBtn');
-    const message = document.getElementById('message');
-
-    // 詳細コンテナの要素
-    const detailContainer = document.getElementById('detailContainer');
-    const detailTitle = document.getElementById('detailTitle');
-    const detailSubtitle = document.getElementById('detailSubtitle');
-    const detailImageContainer = document.getElementById('detailImageContainer');
-    const detailMeta = document.getElementById('detailMeta');
-    const detailIngredients = document.getElementById('detailIngredients');
-    const detailRecipe = document.getElementById('detailRecipe');
-    const detailMemo = document.getElementById('detailMemo');
-    const detailPictures = document.getElementById('detailPictures');
-    const backToListBtn = document.getElementById('backToListBtn'); // ★ 新しいボタン
-  　const detailProps = document.getElementById('detailProps');
-  　const propsSection = document.getElementById('propsSection'); // ★ 追加: 道具セクション全体
-    let rawData = null;
-    let flatList = []; // merged list with type annotation
-    let currentRawPath = null;
+    // 詳細コンテナの要素
+    const detailContainer = document.getElementById('detailContainer');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailSubtitle = document.getElementById('detailSubtitle');
+    const detailImageContainer = document.getElementById('detailImageContainer');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailIngredients = document.getElementById('detailIngredients');
+    const detailRecipe = document.getElementById('detailRecipe');
+    const detailMemo = document.getElementById('detailMemo');
+    const detailPictures = document.getElementById('detailPictures');
+    const backToListBtn = document.getElementById('backToListBtn'); 
+    const detailProps = document.getElementById('detailProps');
+    const propsSection = document.getElementById('propsSection'); // 道具セクション全体を取得 (表示制御用)
+    
+    let rawData = null;
+    let flatList = []; // merged list with type annotation
+    let currentRawPath = null;
     
     // ★★★ 画面切り替えのコア関数 ★★★
     function showList(){
@@ -574,154 +567,145 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
 // Utility: 画像を表示するエレメントを作成する関数
-    function createPictureElement(src, altText) {
-        // null または空文字列の場合は要素を作成しない
-        if (!src || src === 'null' || src === '') return null;
-        
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = altText || '画像';
-        return img;
+function createPictureElement(src, altText) {
+    if (!src || src === 'null' || src === '') return null;
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = altText || '画像';
+    return img;
+}
+
+// 詳細情報を同じページ内のコンテナに表示する関数
+function displayDetail(item){
+    
+    // 1. 画面を詳細表示に切り替える
+    showDetail(); 
+
+    // 2. 画像パスの割り当てとインデックス再定義
+    const pictures = item.pictures || [];
+    // [0]: サムネイル画像
+    const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+
+    // 3. ヘッダー情報 (省略)
+    detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
+    detailSubtitle.textContent = item.flavortxt || '';
+    
+    // 4. メタ情報 (省略)
+    // ...
+
+    // 5. メイン画像 (省略)
+    detailImageContainer.innerHTML = '';
+    const mainImg = createPictureElement(thumbPic, item.title);
+    if (mainImg) {
+        mainImg.style.maxWidth = '100%';
+        mainImg.style.maxHeight = '250px'; 
+        mainImg.style.width = 'auto';
+        mainImg.style.objectFit = 'contain';
+        mainImg.style.borderRadius = '8px';
+        mainImg.style.border = '1px solid #ddd';
+        detailImageContainer.appendChild(mainImg);
     }
 
-    // 詳細情報を同じページ内のコンテナに表示する関数
-    function displayDetail(item){
-        
-        // 1. 画面を詳細表示に切り替える
-        showDetail(); 
-
-        // 2. 画像パスの割り当てとインデックス再定義
-        const pictures = item.pictures || [];
-        // [0]: サムネイル画像 (メイン画像に使用)
-        const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
-        // [1]以降: 手順画像 (stepPictures)
-
-        // 3. ヘッダー情報
-        detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
-        detailSubtitle.textContent = item.flavortxt || '';
-
-        // 4. メタ情報
-        detailMeta.innerHTML = '';
-        detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
-        detailMeta.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'pill'));
-        detailMeta.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'pill'));
-
-        // 5. メイン画像 (サムネイル: pictures[0])
-        detailImageContainer.innerHTML = '';
-        const mainImg = createPictureElement(thumbPic, item.title);
-        if (mainImg) {
-            mainImg.style.maxWidth = '100%';
-            mainImg.style.maxHeight = '250px'; 
-            mainImg.style.width = 'auto';
-            mainImg.style.objectFit = 'contain';
-            mainImg.style.borderRadius = '8px';
-            mainImg.style.border = '1px solid #ddd';
-            detailImageContainer.appendChild(mainImg);
+    // 6. 材料 (Ingredients) (省略)
+    detailIngredients.innerHTML = '';
+    const ing = item.ingredients || {};
+    if (Object.keys(ing).length === 0){
+        detailIngredients.appendChild(elText('div','(材料なし)','muted'));
+    } else {
+        const ul = document.createElement('ul');
+        for (const k of Object.keys(ing)){
+            const li = document.createElement('li');
+            li.textContent = k + ': ' + (ing[k] || '');
+            ul.appendChild(li);
         }
+        detailIngredients.appendChild(ul);
+    }
 
-        // 6. 材料 (Ingredients)
-        detailIngredients.innerHTML = '';
-        const ing = item.ingredients || {};
-        if (Object.keys(ing).length === 0){
-            detailIngredients.appendChild(elText('div','(材料なし)','muted'));
+    // 7. 道具 (Props) - type:"pre"の時のみ表示 (★修正箇所)
+    detailProps.innerHTML = ''; 
+    const props = item.props || {}; // props変数をここでローカル定義
+
+    if (item._type === 'pre') {
+        // type: "pre" の時は道具セクションを表示
+        propsSection.style.display = 'block';
+
+        if (Object.keys(props).length === 0){
+            detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
         } else {
             const ul = document.createElement('ul');
-            for (const k of Object.keys(ing)){
+            for (const k of Object.keys(props)){
                 const li = document.createElement('li');
-                li.textContent = k + ': ' + (ing[k] || '');
+                // キー (k) を削除し、値のみを表示
+                li.textContent = props[k] || ''; 
                 ul.appendChild(li);
             }
-            detailIngredients.appendChild(ul);
+            detailProps.appendChild(ul);
         }
-
-        // 7. 道具 (Props) - type:"pre"の時のみ表示
-        detailProps.innerHTML = ''; 
-        const props = item.props || {};
-
-        if (item._type === 'pre') {
-            // type: "pre" の時は道具セクションを表示
-            propsSection.style.display = 'block';
-
-            if (Object.keys(props).length === 0){
-                detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
-            } else {
-                const ul = document.createElement('ul');
-                for (const k of Object.keys(props)){
-                    const li = document.createElement('li');
-                    // キー (k) を削除し、値のみを表示する (修正済み)
-                    li.textContent = props[k] || ''; 
-                    ul.appendChild(li);
-                }
-                detailProps.appendChild(ul);
-            }
-        } else {
-            // type: "recipe" の時は道具セクションを非表示 (修正済み)
-            propsSection.style.display = 'none';
-        }
-
-        // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[1]~)
-        detailRecipe.innerHTML = '';
-        const rec = item.recipe || [];
-        
-        if (!Array.isArray(rec) || rec.length === 0){
-            detailRecipe.appendChild(elText('div','(手順なし)','muted'));
-        } else {
-            const ol = document.createElement('ol');
-            for (let i = 0; i < rec.length; i++){
-                const step = rec[i];
-                const li = document.createElement('li');
-
-                // 手順画像: pictures[1]から順番に取得 (i+1)
-                const stepPicIndex = i + 1; 
-                const stepPicSrc = pictures[stepPicIndex];
-
-                // null (または未定義/空文字列)の場合は画像を表示しない
-                if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
-                    const picContainer = document.createElement('div');
-                    picContainer.className = 'recipe-step-picture';
-                    const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
-                    if (stepImg) {
-                        picContainer.appendChild(stepImg);
-                        li.appendChild(picContainer);
-                    }
-                }
-                
-                // 手順テキストをliの最後に設定
-                const textNode = document.createTextNode(step);
-                li.appendChild(textNode);
-                
-                ol.appendChild(li);
-            }
-            detailRecipe.appendChild(ol);
-        }
-
-        // 9. メモ (Memo)
-        detailMemo.innerHTML = '';
-        const memo = item.memo || [];
-        if (!Array.isArray(memo) || memo.length === 0){
-            detailMemo.appendChild(elText('div','(メモなし)','muted'));
-        } else {
-            const ulm = document.createElement('ul');
-            for (const m of memo){
-                ulm.appendChild(elText('li', m));
-            }
-            detailMemo.appendChild(ulm);
-        }
-
-        // 10. 写真リンク / JSONデータ (Debug)
-        detailPictures.innerHTML = '';
-        const debugPics = item.pictures || [];
-        if (Array.isArray(debugPics) && debugPics.length){
-            const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
-            detailPictures.appendChild(elText('pre', lines.join('\n')));
-        } else {
-            detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
-        }
+    } else {
+        // type: "recipe" の時は道具セクションを非表示
+        propsSection.style.display = 'none';
     }
+
+    // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[1]~) (★修正箇所)
+    detailRecipe.innerHTML = '';
+    const rec = item.recipe || [];
+    
+    if (!Array.isArray(rec) || rec.length === 0){
+        detailRecipe.appendChild(elText('div','(手順なし)','muted'));
+    } else {
+        const ol = document.createElement('ol');
+        for (let i = 0; i < rec.length; i++){
+            const step = rec[i];
+            const li = document.createElement('li');
+
+            // 手順画像: pictures[1]から順番に取得 (i+1)
+            const stepPicIndex = i + 1; 
+            const stepPicSrc = pictures[stepPicIndex];
+
+            // null (または未定義/空文字列)の場合は画像を表示しない
+            if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
+                const picContainer = document.createElement('div');
+                picContainer.className = 'recipe-step-picture';
+                const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
+                if (stepImg) {
+                    picContainer.appendChild(stepImg);
+                    li.appendChild(picContainer);
+                }
+            }
+            
+            // 手順テキストをliの最後に設定
+            const textNode = document.createTextNode(step);
+            li.appendChild(textNode);
+            
+            ol.appendChild(li);
+        }
+        detailRecipe.appendChild(ol);
+    }
+
+    // 9. メモ (Memo) (省略)
+    detailMemo.innerHTML = '';
+    const memo = item.memo || [];
+    if (!Array.isArray(memo) || memo.length === 0){
+        detailMemo.appendChild(elText('div','(メモなし)','muted'));
+    } else {
+        const ulm = document.createElement('ul');
+        for (const m of memo){
+            ulm.appendChild(elText('li', m));
+        }
+        detailMemo.appendChild(ulm);
+    }
+
+    // 10. 写真リンク / JSONデータ (Debug) (省略)
+    detailPictures.innerHTML = '';
+    const debugPics = item.pictures || [];
+    if (Array.isArray(debugPics) && debugPics.length){
+        const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+        detailPictures.appendChild(elText('pre', lines.join('\n')));
+    } else {
+        detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+    }
+}
     // filter/sort logic
     function applyFiltersAndRender(){
         // ... (省略) ...
