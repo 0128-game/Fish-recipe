@@ -248,7 +248,21 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     object-fit: contain;
     border-radius: 4px;
     border: 1px dashed #eee;
-}  
+} 
+
+/* 手順画像のスタイル */
+.recipe-step-picture {
+    margin: 8px 0;
+    text-align: center;
+}
+.recipe-step-picture img {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px dashed #eee;
+}
   
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
@@ -628,62 +642,70 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             }
             detailIngredients.appendChild(ul);
         }
+// 修正前の該当箇所 (約498行目付近)
+// for (const k of Object.keys(props)){
+//     const li = document.createElement('li');
+//     li.textContent = k + ': ' + (props[k] || ''); // ★ ここで "k + ': '" を結合している
+//     ul.appendChild(li);
+// }
 
-        // 7. 道具 (Props) - type:"pre"の時のみ表示
-        detailProps.innerHTML = ''; 
-        const props = item.props || {};
+// ➡️ 修正後のロジック:
+if (Object.keys(props).length === 0){
+    detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
+} else {
+    const ul = document.createElement('ul');
+    for (const k of Object.keys(props)){
+        const li = document.createElement('li');
+        // キー (k) を削除し、値のみを表示する
+        li.textContent = props[k] || ''; 
+        ul.appendChild(li);
+    }
+    detailProps.appendChild(ul);
+}
 
-        if (item._type === 'pre') {
-            // type: "pre" の時は道具セクションを表示
-            propsSection.style.display = 'block';
+// 修正前の該当箇所 (約530行目付近)
+// for (let i = 0; i < rec.length; i++){
+//     // ... (中略) ...
+//     const stepPicIndex = i + 1; 
+//     const stepPicSrc = pictures[stepPicIndex];
+//     // ... (中略) ...
+//     const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
+//     if (stepImg) picContainer.appendChild(stepImg);
+//     li.appendChild(picContainer);
+// }
 
-            if (Object.keys(props).length === 0){
-                detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
-            } else {
-                const ul = document.createElement('ul');
-                for (const k of Object.keys(props)){
-                    const li = document.createElement('li');
-                    li.textContent = k + ': ' + (props[k] || '');
-                    ul.appendChild(li);
-                }
-                detailProps.appendChild(ul);
+// ➡️ 修正後のロジック (手順画像と手順テキストを統合):
+if (!Array.isArray(rec) || rec.length === 0){
+    detailRecipe.appendChild(elText('div','(手順なし)','muted'));
+} else {
+    const ol = document.createElement('ol');
+    for (let i = 0; i < rec.length; i++){
+        const step = rec[i];
+        const li = document.createElement('li');
+
+        // 手順画像: pictures[1]から順番に取得 (i+1)
+        const stepPicIndex = i + 1; 
+        const stepPicSrc = pictures[stepPicIndex];
+
+        // 1. 画像コンテナを作成し、liの先頭に追加
+        if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
+            const picContainer = document.createElement('div');
+            picContainer.className = 'recipe-step-picture';
+            const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
+            if (stepImg) {
+                picContainer.appendChild(stepImg);
+                li.appendChild(picContainer);
             }
-        } else {
-            // type: "recipe" の時は道具セクションを非表示
-            propsSection.style.display = 'none';
         }
-
-        // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[1]~)
-        detailRecipe.innerHTML = '';
-        const rec = item.recipe || [];
         
-        if (!Array.isArray(rec) || rec.length === 0){
-            detailRecipe.appendChild(elText('div','(手順なし)','muted'));
-        } else {
-            const ol = document.createElement('ol');
-            for (let i = 0; i < rec.length; i++){
-                const step = rec[i];
-                const li = document.createElement('li');
-                li.textContent = step;
-
-                // 手順画像: pictures[1]から順番に取得 (i+1)
-                const stepPicIndex = i + 1; 
-                const stepPicSrc = pictures[stepPicIndex];
-
-                // null (または未定義/空文字列)の場合は画像を表示しない
-                if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
-                    const picContainer = document.createElement('div');
-                    picContainer.className = 'recipe-step-picture';
-                    const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
-                    if (stepImg) picContainer.appendChild(stepImg);
-                    li.appendChild(picContainer);
-                }
-                
-                ol.appendChild(li);
-            }
-            detailRecipe.appendChild(ol);
-        }
-
+        // 2. 手順テキストをliの最後に設定 (画像があればその下に表示される)
+        const textNode = document.createTextNode(step);
+        li.appendChild(textNode);
+        
+        ol.appendChild(li);
+    }
+    detailRecipe.appendChild(ol);
+}
         // 9. メモ (Memo) (変更なし)
         detailMemo.innerHTML = '';
         const memo = item.memo || [];
