@@ -249,74 +249,61 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         </div>
     </header>
 
-    <main id="app">
-        <p id="message" class="muted">データを読み込み中です...</p>
-        
-        <table id="recipeTable">
-            <thead>
-                <tr>
-                    <th style="width:80px">No</th>
-                    <th style="width:80px">Type</th>
-                    <th style="width:80px">Picture</th> 
-                    <th>Title / flavortxt</th>
-                    <th style="width:160px">魚 / 旬</th>
-                    <th style="width:120px">難易度 / 時間</th>
-                    <th style="width:120px">費用 / その他情報</th>
-                    <th style="width:110px">操作</th>
-                </tr>
-            </thead>
-            <tbody id="tbody">
-                </tbody>
-        </table>
+<main id="app">
+    <p id="message" class="muted">データを読み込み中です...</p>
+    
+    <table id="recipeTable">
+        <thead>
+            <tr>
+                <th style="width:80px">No</th>
+                <th style="width:80px">Type</th>
+                <th style="width:80px">Picture</th> 
+                <th>Title / flavortxt</th>
+                <th style="width:160px">魚 / 旬</th>
+                <th style="width:120px">難易度 / 時間</th>
+                <th style="width:120px">費用 / その他情報</th>
+                <th style="width:110px">操作</th>
+            </tr>
+        </thead>
+        <tbody id="tbody">
+            </tbody>
+    </table>
 
-      <div id="detailContainer" class="detail-container hidden">
-    <div class="detail-header">
-        <button id="backToListBtn" class="back-button">← リストに戻る</button>
-        <h2 id="detailTitle"></h2>
-        <div id="detailSubtitle" class="muted"></div>
-        <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
-        <div id="detailMeta" class="meta"></div>
-    </div>
-    
-    <div class="detail-grid">
+    <div id="detailContainer" class="detail-container hidden">
+        <div class="detail-header">
+            <button id="backToListBtn" class="back-button">← リストに戻る</button>
+            <h2 id="detailTitle"></h2>
+            <div id="detailSubtitle" class="muted"></div>
+            <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
+            <div id="detailMeta" class="meta"></div>
+        </div>
+        
+        <div class="detail-grid">
+            <div class="detail-section">
+                <h3 class="section-title">材料 (Ingredients)</h3>
+                <div id="detailIngredients"></div>
+            </div>
+            <div class="detail-section">
+                <h3 class="section-title">道具 (Props)</h3>
+                <div id="detailProps"></div>
+            </div>
+            <div class="detail-section">
+                <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
+                <div id="detailRecipe"></div>
+            </div>
+        </div>
+        
         <div class="detail-section">
-            <h3 class="section-title">材料 (Ingredients)</h3>
-            <div id="detailIngredients"></div>
+            <h3 class="section-title">メモ (Memo)</h3>
+            <div id="detailMemo"></div>
         </div>
-      　<div id="detailContainer" class="detail-container hidden">
-    <div class="detail-grid">
+        
         <div class="detail-section">
-            <h3 class="section-title">材料 (Ingredients)</h3>
-            <div id="detailIngredients"></div>
-        </div>
-        <div class="detail-section">
-            <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
-            <div id="detailRecipe"></div>
-        </div>
-        <div class="detail-section">
-            <h3 class="section-title">道具 (Props)</h3>
-            <div id="detailProps"></div>
-        </div>
+            <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
+            <div id="detailPictures"></div>
         </div>
     </div>
-        <div class="detail-section">
-            <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
-            <div id="detailRecipe"></div>
-        </div>
-    </div>
-    
-    <div class="detail-section">
-        <h3 class="section-title">メモ (Memo)</h3>
-        <div id="detailMemo"></div>
-    </div>
-    
-    <div class="detail-section">
-        <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
-        <div id="detailPictures"></div>
-    </div>
-</div>
-        </div>
-        </main>
+</main>
 </div>
   <script>
 /*
