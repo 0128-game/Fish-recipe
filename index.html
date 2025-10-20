@@ -283,6 +283,22 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             <h3 class="section-title">材料 (Ingredients)</h3>
             <div id="detailIngredients"></div>
         </div>
+      　<div id="detailContainer" class="detail-container hidden">
+    <div class="detail-grid">
+        <div class="detail-section">
+            <h3 class="section-title">材料 (Ingredients)</h3>
+            <div id="detailIngredients"></div>
+        </div>
+        <div class="detail-section">
+            <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
+            <div id="detailRecipe"></div>
+        </div>
+        <div class="detail-section">
+            <h3 class="section-title">道具 (Props)</h3>
+            <div id="detailProps"></div>
+        </div>
+        </div>
+    </div>
         <div class="detail-section">
             <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
             <div id="detailRecipe"></div>
@@ -337,6 +353,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailMemo = document.getElementById('detailMemo');
     const detailPictures = document.getElementById('detailPictures');
     const backToListBtn = document.getElementById('backToListBtn'); // ★ 新しいボタン
+  　const detailProps = document.getElementById('detailProps');
 
     let rawData = null;
     let flatList = []; // merged list with type annotation
@@ -584,6 +601,24 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 ul.appendChild(li);
             }
             detailIngredients.appendChild(ul);
+        }
+      // ★★★ 5.5. 道具 (Props) を追加 ★★★
+        detailProps.innerHTML = ''; // 要素をクリア
+        const props = item.props || {};
+
+        if (Object.keys(props).length === 0){
+            // props が存在しない場合や空の場合は「なし」と表示
+            detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
+        } else {
+            // props が存在する場合はリスト形式で表示
+            const ul = document.createElement('ul');
+            for (const k of Object.keys(props)){
+                const li = document.createElement('li');
+                // 材料と同じ形式で「道具: 内容」を表示
+                li.textContent = k + ': ' + (props[k] || '');
+                ul.appendChild(li);
+            }
+            detailProps.appendChild(ul);
         }
 
         // 6. 手順 (Recipe / Pre-Process)
