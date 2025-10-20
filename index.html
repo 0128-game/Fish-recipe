@@ -297,6 +297,22 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         grid-template-columns: 1fr; /* 画面が狭いときは1列にする */
     }
 }
+
+  /* 詳細画面のメタ情報（.meta）内の下処理ボタンのスタイル */
+.pre-link-pill {
+    /* pillクラスのスタイルを上書き/強化 */
+    background-color: #f0fff4 !important; /* 薄いグリーン系 */
+    color: #2f855a !important; /* 濃いグリーン系 */
+    border: 1px solid #2f855a !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+    /* pillクラスはdisplay:inline-blockを持つため、ボタンとして機能する */
+}
+.pre-link-pill:hover {
+    background-color: #e6fffa !important; /* ホバーでさらに明るく */
+    box-shadow: 0 1px 3px rgba(47, 133, 90, 0.2);
+}
   
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
@@ -494,140 +510,140 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     function clearTable(){ tbody.innerHTML = ''; }
 
-  // render table rows from list
-    function renderTable(list){
-        clearTable();
-        if (!Array.isArray(list) || list.length === 0){
-            tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; 
-            return;
+// render table rows from list
+function renderTable(list){
+    clearTable();
+    if (!Array.isArray(list) || list.length === 0){
+        tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>'; 
+        return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const item of list){
+        const tr = document.createElement('tr');
+
+        // No
+        const tdNo = document.createElement('td');
+        tdNo.textContent = item.No || '-';
+        tr.appendChild(tdNo);
+
+        // Type
+        const tdType = document.createElement('td');
+        const span = document.createElement('span');
+        span.className = 'tag-type ' + (item._type === 'pre' ? 'type-pre' : 'type-recipe');
+        span.textContent = item._type;
+        tdType.appendChild(span);
+        tr.appendChild(tdType);
+        
+        // Picture
+        const tdPicture = document.createElement('td');
+        const img = document.createElement('img');
+        img.className = 'recipe-thumb';
+        
+        const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
+        
+        let imgSrc = '';
+        if (firstPic && typeof firstPic === 'string'){
+            imgSrc = firstPic;
+        } else {
+            imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
         }
-        const fragment = document.createDocumentFragment();
-        for (const item of list){
-            const tr = document.createElement('tr');
+        
+        img.src = imgSrc;
+        img.alt = item.title || '画像';
+        tdPicture.appendChild(img);
+        tr.appendChild(tdPicture);
 
-            // No
-            const tdNo = document.createElement('td');
-            tdNo.textContent = item.No || '-';
-            tr.appendChild(tdNo);
+        // Title and flavortxt
+        const tdTitle = document.createElement('td');
+        const title = elText('div', item.title || '(タイトルなし)', ''); title.style.fontWeight='700';
+        const flav = elText('div', item.flavortxt || '', 'muted');
+        tdTitle.appendChild(title);
+        tdTitle.appendChild(flav);
+        tr.appendChild(tdTitle);
 
-            // Type
-            const tdType = document.createElement('td');
-            const span = document.createElement('span');
-            span.className = 'tag-type ' + (item._type === 'pre' ? 'type-pre' : 'type-recipe');
-            span.textContent = item._type;
-            tdType.appendChild(span);
-            tr.appendChild(tdType);
-            
-            // Picture
-            const tdPicture = document.createElement('td');
-            const img = document.createElement('img');
-            img.className = 'recipe-thumb';
-            
-            const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
-            
-            let imgSrc = '';
-            if (firstPic && typeof firstPic === 'string'){
-                imgSrc = firstPic;
-            } else {
-                imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
-            }
-            
-            img.src = imgSrc;
-            img.alt = item.title || '画像';
-            tdPicture.appendChild(img);
-            tr.appendChild(tdPicture);
+        // fish / season
+        const tdFish = document.createElement('td');
+        tdFish.appendChild(elText('div', joinIfArray(item['fish-name']) || '-', ''));
+        tdFish.appendChild(elText('div', joinIfArray(item.season) || '', 'muted'));
+        tr.appendChild(tdFish);
 
-            // Title and flavortxt
-            const tdTitle = document.createElement('td');
-            const title = elText('div', item.title || '(タイトルなし)', ''); title.style.fontWeight='700';
-            const flav = elText('div', item.flavortxt || '', 'muted');
-            tdTitle.appendChild(title);
-            tdTitle.appendChild(flav);
-            tr.appendChild(tdTitle);
+        // difficulty / time
+        const tdDiff = document.createElement('td');
+        tdDiff.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-')));
+        tdDiff.appendChild(elText('div', '所要: ' + (item.time != null ? item.time + '分' : '-'), 'muted'));
+        tr.appendChild(tdDiff);
 
-            // fish / season
-            const tdFish = document.createElement('td');
-            tdFish.appendChild(elText('div', joinIfArray(item['fish-name']) || '-', ''));
-            tdFish.appendChild(elText('div', joinIfArray(item.season) || '', 'muted'));
-            tr.appendChild(tdFish);
+        // cost / info line
+        const tdCost = document.createElement('td');
+        tdCost.appendChild(elText('div', '¥' + (item.cost != null ? item.cost : '-')));
+        const infoLine = (item._type === 'recipe')
+            ? ('食事: ' + (item.timing || '-'))
+            : ('特徴: ' + joinIfArray(item.feature));
+        tdCost.appendChild(elText('div', infoLine, 'muted'));
+        tr.appendChild(tdCost);
 
-            // difficulty / time
-            const tdDiff = document.createElement('td');
-            tdDiff.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-')));
-            tdDiff.appendChild(elText('div', '所要: ' + (item.time != null ? item.time + '分' : '-'), 'muted'));
-            tr.appendChild(tdDiff);
-
-            // cost / info line
-            const tdCost = document.createElement('td');
-            tdCost.appendChild(elText('div', '¥' + (item.cost != null ? item.cost : '-')));
-            const infoLine = (item._type === 'recipe')
-                ? ('食事: ' + (item.timing || '-'))
-                : ('特徴: ' + joinIfArray(item.feature));
-            tdCost.appendChild(elText('div', infoLine, 'muted'));
-            tr.appendChild(tdCost);
-
-            // actions
-            const tdActions = document.createElement('td');
-            tdActions.className = 'actions';
-            
-            // ★★★ 修正箇所: 詳細ボタンの挙動を変更 ★★★
-            const viewBtn = document.createElement('button');
-            viewBtn.textContent = '詳細';
-            
-            viewBtn.addEventListener('click', ()=> {
-                // レシピであり、かつ下処理が設定されている場合
-                if (item._type === 'recipe' && item['pre-recipe']) {
-                    const preRecipeName = item['pre-recipe'];
-                    // flatListから対応する下処理アイテムを探す
-                    const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
-                    
-                    if (preItem) {
-                        // 下処理が見つかった場合、そちらの詳細画面に遷移
-                        displayDetail(preItem);
-                        return; // 処理を終了
-                    }
-                }
-                
-                // それ以外の場合（下処理アイテム、または下処理のないレシピ）、自分の詳細画面に遷移
-                displayDetail(item);
-            });
-            
-            tdActions.appendChild(viewBtn);
-            // ★★★ 修正箇所終了 ★★★
-
-
-            // 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン (以前の修正を保持)
+        // actions
+        const tdActions = document.createElement('td');
+        tdActions.className = 'actions';
+        
+        // ★★★ 修正箇所: 詳細ボタンの挙動を変更（下処理へ直接遷移） ★★★
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = '詳細';
+        
+        viewBtn.addEventListener('click', ()=> {
+            // レシピであり、かつ下処理が設定されている場合
             if (item._type === 'recipe' && item['pre-recipe']) {
                 const preRecipeName = item['pre-recipe'];
+                // flatListから対応する下処理アイテムを探す
                 const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
                 
                 if (preItem) {
-                    const preBtn = document.createElement('button');
-                    preBtn.textContent = '下処理へ';
-                    preBtn.style.background = '#4a5568'; // グレー系
-                    preBtn.addEventListener('click', ()=> displayDetail(preItem));
-                    tdActions.appendChild(preBtn);
+                    // 下処理が見つかった場合、そちらの詳細画面に遷移
+                    displayDetail(preItem);
+                    return; // 処理を終了
                 }
             }
             
-            // 変更: JSONボタンを印刷ボタンに置き換え (以前の修正を保持)
-            const printBtn = document.createElement('button');
-            printBtn.textContent = '印刷';
-            printBtn.style.background = '#a0aec0'; // 薄いグレー
-            printBtn.addEventListener('click', ()=> {
-                // 詳細画面を表示してから印刷ダイアログを開く
-                displayDetail(item);
-                setTimeout(() => {
-                    window.print();
-                }, 500); // 画面切り替えを待つ
-            });
-            tdActions.appendChild(printBtn);
+            // それ以外の場合（下処理アイテム、または下処理のないレシピ）、自分の詳細画面に遷移
+            displayDetail(item);
+        });
+        
+        tdActions.appendChild(viewBtn);
+        // ★★★ 修正箇所終了 ★★★
 
-            tr.appendChild(tdActions);
-            fragment.appendChild(tr);
+
+        // 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン
+        if (item._type === 'recipe' && item['pre-recipe']) {
+            const preRecipeName = item['pre-recipe'];
+            const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+            
+            if (preItem) {
+                const preBtn = document.createElement('button');
+                preBtn.textContent = '下処理へ';
+                preBtn.style.background = '#4a5568'; // グレー系
+                preBtn.addEventListener('click', ()=> displayDetail(preItem));
+                tdActions.appendChild(preBtn);
+            }
         }
-        tbody.appendChild(fragment);
+        
+        // 変更: JSONボタンを印刷ボタンに置き換え
+        const printBtn = document.createElement('button');
+        printBtn.textContent = '印刷';
+        printBtn.style.background = '#a0aec0'; // 薄いグレー
+        printBtn.addEventListener('click', ()=> {
+            // 詳細画面を表示してから印刷ダイアログを開く
+            displayDetail(item);
+            setTimeout(() => {
+                window.print();
+            }, 500); // 画面切り替えを待つ
+        });
+        tdActions.appendChild(printBtn);
+
+        tr.appendChild(tdActions);
+        fragment.appendChild(tr);
     }
+    tbody.appendChild(fragment);
+}
 // Utility: 画像を表示するエレメントを作成する関数 (変更なし)
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
