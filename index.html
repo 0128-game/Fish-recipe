@@ -567,35 +567,43 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             tdCost.appendChild(elText('div', infoLine, 'muted'));
             tr.appendChild(tdCost);
 
-            // actions
+// actions
             const tdActions = document.createElement('td');
             tdActions.className = 'actions';
             
-            // 詳細ボタン
+            // 詳細ボタン (変更なし)
             const viewBtn = document.createElement('button');
             viewBtn.textContent = '詳細';
-            
-            // ★★★ displayDetail関数を呼び出すリスナーを設定し、詳細画面に切り替える ★★★
             viewBtn.addEventListener('click', ()=> displayDetail(item));
-            
             tdActions.appendChild(viewBtn);
 
-            // quick copy JSON button
-            const copyBtn = document.createElement('button');
-            copyBtn.textContent = 'JSON';
-            copyBtn.style.background = '#6b7280';
-            copyBtn.addEventListener('click', ()=> {
-                const blob = new Blob([JSON.stringify(item, null, 2)], {type:'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `item-${item.No || item._origKey}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
+            // ★★★ 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン ★★★
+            if (item._type === 'recipe' && item['pre-recipe']) {
+                const preRecipeName = item['pre-recipe']; // 下処理のタイトル名を取得
+                // flatListから対応する下処理アイテムを探す
+                const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+                
+                if (preItem) {
+                    const preBtn = document.createElement('button');
+                    preBtn.textContent = '下処理へ';
+                    preBtn.style.background = '#4a5568'; // グレー系
+                    preBtn.addEventListener('click', ()=> displayDetail(preItem));
+                    tdActions.appendChild(preBtn);
+                }
+            }
+            
+            // ★★★ 変更: JSONボタンを印刷ボタンに置き換え ★★★
+            const printBtn = document.createElement('button');
+            printBtn.textContent = '印刷';
+            printBtn.style.background = '#a0aec0'; // 薄いグレー
+            printBtn.addEventListener('click', ()=> {
+                // 詳細画面を表示してから印刷ダイアログを開く
+                displayDetail(item);
+                setTimeout(() => {
+                    window.print();
+                }, 500); // 画面切り替えを待つ
             });
-            tdActions.appendChild(copyBtn);
+            tdActions.appendChild(printBtn);
 
             tr.appendChild(tdActions);
             fragment.appendChild(tr);
@@ -636,7 +644,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 4. メタ情報
+        // 4. メタ情報 (★修正箇所)
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -644,7 +652,30 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailMeta.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'pill'));
+        
+        // ★ 下処理参照が設定されている場合、ボタン/リンクとして表示する
+        if (item['pre-recipe'] && item._type === 'recipe') {
+             const preRecipeName = item['pre-recipe'];
+             const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+             
+             if (preItem) {
+                 const preBtn = document.createElement('button');
+                 preBtn.textContent = '下処理: ' + preRecipeName;
+                 preBtn.className = 'pill pre-link-pill'; // スタイル用クラス
+                 preBtn.style.border = '1px solid #2b6cb0';
+                 preBtn.style.cursor = 'pointer';
+                 preBtn.style.backgroundColor = '#eef5ff';
+                 preBtn.style.fontWeight = 'bold';
+                 preBtn.addEventListener('click', ()=> displayDetail(preItem));
+                 detailMeta.appendChild(preBtn);
+             } else {
+                // 見つからない場合はテキストとして表示
+                detailMeta.appendChild(elText('div', '下処理参照: ' + preRecipeName, 'pill'));
+             }
+        } else if (item._type === 'pre') {
+             // 下処理アイテムの場合
+             detailMeta.appendChild(elText('div', '下処理', 'pill'));
+        }
 
         // 5. メイン画像 (サムネイル: pictures[0])
         detailImageContainer.innerHTML = '';
@@ -770,17 +801,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailMemo.appendChild(ulm);
         }
 
-        // 10. 写真リンク / JSONデータ (Debug) - ★このセクション全体を削除★
-        // detailPictures.innerHTML = ''; 
-        // const debugPics = item.pictures || [];
-        // if (Array.isArray(debugPics) && debugPics.length){
-        //     const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
-        //     detailPictures.appendChild(elText('pre', lines.join('\n')));
-        // } else {
-        //     detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
-        // }
-    }
-    // filter/sort logic
+        // 10. (削除済み)
+    }    // filter/sort logic
     function applyFiltersAndRender(){
         // ... (省略) ...
         const q = (qInput.value || '').trim().toLowerCase();
