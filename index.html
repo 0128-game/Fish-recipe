@@ -664,6 +664,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             propsSection.style.display = 'none';
         }
 
+// displayDetail関数内 (約740行目付近)
+
         // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[1]~)
         detailRecipe.innerHTML = '';
         const rec = item.recipe || [];
@@ -671,12 +673,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         if (!Array.isArray(rec) || rec.length === 0){
             detailRecipe.appendChild(elText('div','(手順なし)','muted'));
         } else {
+            const container = document.createElement('div'); // 手順全体を囲むコンテナ
             const ol = document.createElement('ol');
+            
             for (let i = 0; i < rec.length; i++){
                 const step = rec[i];
-                const li = document.createElement('li');
-
-                // 手順画像: pictures[1]から順番に取得 (i+1)
+                
+                // 1. 手順画像: pictures[1]から順番に取得 (i+1)
                 const stepPicIndex = i + 1; 
                 const stepPicSrc = pictures[stepPicIndex];
 
@@ -685,19 +688,24 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                     const picContainer = document.createElement('div');
                     picContainer.className = 'recipe-step-picture';
                     const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
-                    if (stepImg) {
+                    
+                    if (stepImg) { 
                         picContainer.appendChild(stepImg);
-                        li.appendChild(picContainer);
+                        // 画像は <ol> の外、<ol> の前に挿入する
+                        container.appendChild(picContainer); 
                     }
                 }
                 
-                // 手順テキストをliの最後に設定
-                const textNode = document.createTextNode(step);
-                li.appendChild(textNode);
+                // 2. 手順テキスト (<li>)
+                const li = document.createElement('li');
+                li.textContent = step;
                 
                 ol.appendChild(li);
             }
-            detailRecipe.appendChild(ol);
+            
+            // 3. 最後に番号付きリスト全体をコンテナに追加
+            container.appendChild(ol);
+            detailRecipe.appendChild(container);
         }
 
         // 9. メモ (Memo)
