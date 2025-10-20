@@ -220,6 +220,36 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     clear: both;
 }
 
+.detail-picture-box {
+    margin: 10px 0 15px 0;
+    text-align: center;
+    border: 1px solid #eef;
+    padding: 8px;
+    border-radius: 8px;
+    background: #fcfcfc;
+}
+.detail-picture-box img {
+    max-width: 100%;
+    max-height: 250px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+.recipe-step-picture {
+    margin: 8px 0;
+    text-align: center;
+}
+.recipe-step-picture img {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px dashed #eee;
+}  
+  
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
 </head>
@@ -278,13 +308,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             <div id="detailMeta" class="meta"></div>
         </div>
         
-        <div class="detail-grid">
+<div class="detail-grid">
             <div class="detail-section">
                 <h3 class="section-title">材料 (Ingredients)</h3>
+                <div id="detailIngredientsPicture" class="detail-picture-box"></div>
                 <div id="detailIngredients"></div>
             </div>
             <div class="detail-section">
                 <h3 class="section-title">道具 (Props)</h3>
+                <div id="detailPropsPicture" class="detail-picture-box"></div>
                 <div id="detailProps"></div>
             </div>
             <div class="detail-section">
@@ -336,12 +368,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailImageContainer = document.getElementById('detailImageContainer');
     const detailMeta = document.getElementById('detailMeta');
     const detailIngredients = document.getElementById('detailIngredients');
+  　const detailIngredientsPicture = document.getElementById('detailIngredientsPicture'); // ★ 追加
     const detailRecipe = document.getElementById('detailRecipe');
     const detailMemo = document.getElementById('detailMemo');
     const detailPictures = document.getElementById('detailPictures');
     const backToListBtn = document.getElementById('backToListBtn'); // ★ 新しいボタン
   　const detailProps = document.getElementById('detailProps');
-
+  　const detailPropsPicture = document.getElementById('detailPropsPicture'); // ★ 追加
     let rawData = null;
     let flatList = []; // merged list with type annotation
     let currentRawPath = null;
@@ -529,17 +562,38 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         tbody.appendChild(fragment);
     }
 
+    // Utility: 画像を表示するエレメントを作成する関数
+    function createPictureElement(src, altText) {
+        if (!src || src === 'null') return null;
+        
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = altText || '画像';
+        return img;
+    }
+
     // 詳細情報を同じページ内のコンテナに表示する関数
     function displayDetail(item){
         
         // 1. 画面を詳細表示に切り替える
         showDetail(); 
 
-        // 2. ヘッダー情報
+        // 2. 画像パスの割り当てとフォールバック
+        const pictures = item.pictures || [];
+        const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+
+        // 0: サムネイル画像 (メイン画像に使用) -> thumbPic
+        // 1: 材料画像 -> ingredientsPic (nullの場合はサムネイルにフォールバック)
+        const ingredientsPic = pictures[1] || thumbPic;
+        // 2: 道具画像 -> propsPic (type:"pre"の時のみ使用。nullの場合はサムネイルにフォールバック)
+        const propsPic = pictures[2] || thumbPic;
+        // 3~: 手順画像 -> stepPictures
+
+        // 3. ヘッダー情報 (変更なし)
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 3. メタ情報
+        // 4. メタ情報 (変更なし)
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -549,33 +603,24 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '下処理参照: ' + (item['pre-recipe'] || '-'), 'pill'));
 
-        // 4. メイン画像
+        // 5. メイン画像 (サムネイル: pictures[0])
         detailImageContainer.innerHTML = '';
-        const mainImg = document.createElement('img');
-        // CSSクラスは既存の.recipe-thumbと区別するためインラインで設定
-        mainImg.style.maxWidth = '100%';
-        mainImg.style.maxHeight = '250px'; 
-        mainImg.style.width = 'auto';
-        mainImg.style.objectFit = 'contain';
-        mainImg.style.borderRadius = '8px';
-        mainImg.style.border = '1px solid #ddd';
-
-        const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
-        
-        let imgSrc = '';
-        if (firstPic && typeof firstPic === 'string'){
-            imgSrc = firstPic;
-        } else {
-            imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+        const mainImg = createPictureElement(thumbPic, item.title);
+        if (mainImg) {
+            mainImg.style.maxWidth = '100%';
+            mainImg.style.maxHeight = '250px'; 
+            mainImg.style.width = 'auto';
+            mainImg.style.objectFit = 'contain';
+            mainImg.style.borderRadius = '8px';
+            mainImg.style.border = '1px solid #ddd';
+            detailImageContainer.appendChild(mainImg);
         }
-        
-        mainImg.src = imgSrc;
-        mainImg.alt = item.title || '画像';
-        
-        detailImageContainer.appendChild(mainImg);
 
+        // 6. 材料 (Ingredients) + 材料画像 (pictures[1])
+        detailIngredientsPicture.innerHTML = '';
+        const ingPicEl = createPictureElement(ingredientsPic, item.title + ' 材料');
+        if (ingPicEl) detailIngredientsPicture.appendChild(ingPicEl);
 
-        // 5. 材料 (Ingredients)
         detailIngredients.innerHTML = '';
         const ing = item.ingredients || {};
         if (Object.keys(ing).length === 0){
@@ -589,41 +634,68 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             }
             detailIngredients.appendChild(ul);
         }
-      // ★★★ 5.5. 道具 (Props) を追加 ★★★
-        detailProps.innerHTML = ''; // 要素をクリア
+
+        // 7. 道具 (Props) + 道具画像 (pictures[2])
+        detailPropsPicture.innerHTML = '';
+        detailProps.innerHTML = ''; 
         const props = item.props || {};
 
-        if (Object.keys(props).length === 0){
-            // props が存在しない場合や空の場合は「なし」と表示
-            detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
-        } else {
-            // props が存在する場合はリスト形式で表示
-            const ul = document.createElement('ul');
-            for (const k of Object.keys(props)){
-                const li = document.createElement('li');
-                // 材料と同じ形式で「道具: 内容」を表示
-                li.textContent = k + ': ' + (props[k] || '');
-                ul.appendChild(li);
+        if (item._type === 'pre') {
+            // type: "pre" の時のみ道具画像を表示
+            const propsPicEl = createPictureElement(propsPic, item.title + ' 道具');
+            if (propsPicEl) detailPropsPicture.appendChild(propsPicEl);
+
+            if (Object.keys(props).length === 0){
+                detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
+            } else {
+                const ul = document.createElement('ul');
+                for (const k of Object.keys(props)){
+                    const li = document.createElement('li');
+                    li.textContent = k + ': ' + (props[k] || '');
+                    ul.appendChild(li);
+                }
+                detailProps.appendChild(ul);
             }
-            detailProps.appendChild(ul);
+        } else {
+            // type: "recipe" の時は道具セクションを非表示にする
+            detailProps.closest('.detail-section').style.display = 'none';
         }
 
-        // 6. 手順 (Recipe / Pre-Process)
+        // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[3]~)
         detailRecipe.innerHTML = '';
         const rec = item.recipe || [];
+        
         if (!Array.isArray(rec) || rec.length === 0){
             detailRecipe.appendChild(elText('div','(手順なし)','muted'));
         } else {
             const ol = document.createElement('ol');
-            for (const step of rec){
+            for (let i = 0; i < rec.length; i++){
+                const step = rec[i];
                 const li = document.createElement('li');
                 li.textContent = step;
+
+                // 手順画像: pictures[3]から順番に取得
+                const stepPicIndex = i + 3;
+                const stepPicSrc = pictures[stepPicIndex];
+
+                // null (または未定義)の場合は画像を表示しない
+                if (stepPicSrc && stepPicSrc !== 'null') {
+                    const picContainer = document.createElement('div');
+                    picContainer.className = 'recipe-step-picture';
+                    const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
+                    if (stepImg) picContainer.appendChild(stepImg);
+                    li.appendChild(picContainer);
+                }
+                
                 ol.appendChild(li);
             }
             detailRecipe.appendChild(ol);
         }
+        // type: "recipe" でない場合は道具セクションを表示に戻す（他の表示に影響させないため）
+        if (item._type !== 'pre') detailProps.closest('.detail-section').style.display = 'block';
 
-        // 7. メモ (Memo)
+
+        // 9. メモ (Memo) (変更なし)
         detailMemo.innerHTML = '';
         const memo = item.memo || [];
         if (!Array.isArray(memo) || memo.length === 0){
@@ -636,17 +708,16 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailMemo.appendChild(ulm);
         }
 
-        // 8. 写真リンク / JSONデータ (Debug)
+        // 10. 写真リンク / JSONデータ (Debug) (変更なし)
         detailPictures.innerHTML = '';
-        const pics = item.pictures || [];
-        if (Array.isArray(pics) && pics.length){
-            const lines = pics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+        const debugPics = item.pictures || [];
+        if (Array.isArray(debugPics) && debugPics.length){
+            const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
             detailPictures.appendChild(elText('pre', lines.join('\n')));
         } else {
             detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
         }
     }
-
     // filter/sort logic
     function applyFiltersAndRender(){
         // ... (省略) ...
