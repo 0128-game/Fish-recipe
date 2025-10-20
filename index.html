@@ -375,11 +375,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             <h3 class="section-title">メモ (Memo)</h3>
             <div id="detailMemo"></div>
         </div>
-        
-        <div class="detail-section">
-            <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
-            <div id="detailPictures"></div>
-        </div>
     </div>
 </main>
 </div>
@@ -416,10 +411,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailIngredients = document.getElementById('detailIngredients');
     const detailRecipe = document.getElementById('detailRecipe');
     const detailMemo = document.getElementById('detailMemo');
-    const detailPictures = document.getElementById('detailPictures');
+    // detailPictures は削除されました
     const backToListBtn = document.getElementById('backToListBtn'); 
     const detailProps = document.getElementById('detailProps');
-    const propsSection = document.getElementById('propsSection'); // 道具セクション全体を取得 (表示制御用)
+    const propsSection = document.getElementById('propsSection'); 
     
     let rawData = null;
     let flatList = []; // merged list with type annotation
@@ -608,18 +603,16 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         tbody.appendChild(fragment);
     }
 
-// Utility: 画像を表示するエレメントを作成する関数
+// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
     function createPictureElement(src, altText, maxHeight = '250px') {
-        // null または空文字列の場合は要素を作成しない
         if (!src || src === 'null' || src === '') return null;
         
         const img = document.createElement('img');
         img.src = src;
         img.alt = altText || '画像';
         
-        // 詳細画面のセクション内画像用の共通スタイルを適用
         img.style.maxWidth = '100%';
-        img.style.maxHeight = maxHeight; // 最大高さを設定可能に
+        img.style.maxHeight = maxHeight; 
         img.style.width = 'auto';
         img.style.objectFit = 'contain';
         img.style.borderRadius = '4px';
@@ -637,15 +630,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         // 2. 画像パスの割り当てとインデックス再定義
         const pictures = item.pictures || [];
-        // [0]: サムネイル画像 (メイン画像、材料・道具の画像に使用)
         const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
-        // [1]以降: 手順画像 (stepPictures)
 
         // 3. ヘッダー情報
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 4. メタ情報 (変更なし)
+        // 4. メタ情報
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -671,7 +662,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         // 6a. 材料画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
         const ingPicContainer = document.createElement('div');
         ingPicContainer.className = 'detail-picture-box';
-        // 200px maxHeightを使用
         const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px'); 
         if (ingPic) ingPicContainer.appendChild(ingPic);
         detailIngredients.appendChild(ingPicContainer);
@@ -699,7 +689,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             // 7a. 道具画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
             const propsPicContainer = document.createElement('div');
             propsPicContainer.className = 'detail-picture-box';
-            // 200px maxHeightを使用
             const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px'); 
             if (propsPic) propsPicContainer.appendChild(propsPic);
             detailProps.appendChild(propsPicContainer);
@@ -727,7 +716,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         if (!Array.isArray(rec) || rec.length === 0){
             detailRecipe.appendChild(elText('div','(手順なし)','muted'));
         } else {
-            // 3列グリッドコンテナ
             const gridContainer = document.createElement('div');
             gridContainer.className = 'recipe-steps-grid'; 
 
@@ -735,7 +723,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 const step = rec[i];
                 const stepNo = i + 1;
                 
-                // 各手順を囲むカード要素
                 const card = document.createElement('div');
                 card.className = 'recipe-step-card';
 
@@ -746,7 +733,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
                     const picContainer = document.createElement('div');
                     picContainer.className = 'recipe-step-picture';
-                    // 150px maxHeightを使用
                     const stepImg = createPictureElement(stepPicSrc, `手順${stepNo}の画像`, '150px'); 
                     
                     if (stepImg) { 
@@ -759,7 +745,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 const ol = document.createElement('ol');
                 const li = document.createElement('li');
                 
-                // CSSの::before擬似要素で番号を表示するため、data属性に手順番号を設定
                 li.setAttribute('data-step', stepNo); 
                 li.textContent = step;
                 
@@ -785,15 +770,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailMemo.appendChild(ulm);
         }
 
-        // 10. 写真リンク / JSONデータ (Debug)
-        detailPictures.innerHTML = '';
-        const debugPics = item.pictures || [];
-        if (Array.isArray(debugPics) && debugPics.length){
-            const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
-            detailPictures.appendChild(elText('pre', lines.join('\n')));
-        } else {
-            detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
-        }
+        // 10. 写真リンク / JSONデータ (Debug) - ★このセクション全体を削除★
+        // detailPictures.innerHTML = ''; 
+        // const debugPics = item.pictures || [];
+        // if (Array.isArray(debugPics) && debugPics.length){
+        //     const lines = debugPics.map((p,i)=> (p === null ? `[${i}] null` : `[${i}] ${p}`));
+        //     detailPictures.appendChild(elText('pre', lines.join('\n')));
+        // } else {
+        //     detailPictures.appendChild(elText('div', '(pictures なし)', 'muted'));
+        // }
     }
     // filter/sort logic
     function applyFiltersAndRender(){
