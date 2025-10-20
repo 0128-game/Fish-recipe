@@ -155,7 +155,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 /* --- 詳細コンテナ（DOM操作で表示する領域）のスタイル --- */
 .detail-container{
-    margin-top: 0; /* ページ全体を使うためマージンを削除 */
+    margin-top: 0; 
     padding: 20px;
     background: var(--card);
     border-radius: 10px;
@@ -179,6 +179,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     font-size: 0.9rem;
     color: var(--muted);
 }
+/* 材料・道具セクションは横2列で固定 */
 .detail-grid{
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -211,7 +212,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     padding: 8px 12px;
     border-radius: 8px;
     margin-bottom: 15px;
-    float: right; /* タイトルと並べる場合はfloatかflexを使いますが、今回は目立たせるため独立させます */
+    float: right; 
 }
 /* floatを解除 */
 .detail-header::after {
@@ -220,6 +221,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     clear: both;
 }
 
+/* ★★★ 材料・道具の画像ボックスを大きく表示 ★★★ */
 .detail-picture-box {
     margin: 10px 0 15px 0;
     text-align: center;
@@ -230,38 +232,70 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 }
 .detail-picture-box img {
     max-width: 100%;
-    max-height: 250px;
+    max-height: 200px; /* JSで設定する最大高さ */
     width: auto;
     object-fit: contain;
     border-radius: 4px;
     display: block;
     margin: 0 auto;
 }
-.recipe-step-picture {
-    margin: 8px 0;
-    text-align: center;
+
+
+/* ★★★ 手順セクションの3列グリッドレイアウト ★★★ */
+.recipe-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 1:1:1 の3列 */
+    gap: 20px; /* セクション間の間隔 */
+    margin-top: 15px;
 }
-.recipe-step-picture img {
-    max-width: 100%;
-    max-height: 200px;
-    width: auto;
-    object-fit: contain;
-    border-radius: 4px;
-    border: 1px dashed #eee;
-} 
+/* 各手順のカードスタイル */
+.recipe-step-card {
+    background: #f7f9fc;
+    border: 1px solid #eef;
+    padding: 15px;
+    border-radius: 8px;
+    /* min-heightは削除または小さくし、コンテンツに合わせる */
+    display: flex;
+    flex-direction: column;
+}
+.recipe-step-card ol {
+    padding-left: 0; /* 番号付きリストのインデントをリセット */
+    margin-top: 10px;
+    list-style: none; /* olのデフォルト番号を消す */
+}
+/* 手順番号 (li) のスタイル調整 */
+.recipe-step-card li {
+    list-style-type: none; /* デフォルトの番号を消す */
+    margin-bottom: 10px;
+    font-weight: normal; /* テキストは通常に戻す */
+}
+.recipe-step-card li::before {
+    content: attr(data-step) ". "; /* カスタムの番号を表示 */
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 900;
+    margin-right: 5px;
+}
 
 /* 手順画像のスタイル */
 .recipe-step-picture {
-    margin: 8px 0;
+    margin: 0 0 10px 0; /* カード内で下にのみマージン */
     text-align: center;
 }
 .recipe-step-picture img {
     max-width: 100%;
-    max-height: 200px;
+    max-height: 150px; /* 3列に収まりやすい高さ */
     width: auto;
     object-fit: contain;
     border-radius: 4px;
     border: 1px dashed #eee;
+}
+
+/* モバイル対応 (3列から1列に戻す) */
+@media (max-width: 900px) {
+    .recipe-steps-grid {
+        grid-template-columns: 1fr; /* 画面が狭いときは1列にする */
+    }
 }
   
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
@@ -575,16 +609,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
 // Utility: 画像を表示するエレメントを作成する関数
-    function createPictureElement(src, altText) {
+    function createPictureElement(src, altText, maxHeight = '250px') {
         // null または空文字列の場合は要素を作成しない
         if (!src || src === 'null' || src === '') return null;
         
         const img = document.createElement('img');
         img.src = src;
         img.alt = altText || '画像';
+        
+        // 詳細画面のセクション内画像用の共通スタイルを適用
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = maxHeight; // 最大高さを設定可能に
+        img.style.width = 'auto';
+        img.style.objectFit = 'contain';
+        img.style.borderRadius = '4px';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+        
         return img;
     }
-
+    
     // 詳細情報を同じページ内のコンテナに表示する関数
     function displayDetail(item){
         
@@ -593,7 +637,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         // 2. 画像パスの割り当てとインデックス再定義
         const pictures = item.pictures || [];
-        // [0]: サムネイル画像 (メイン画像に使用)
+        // [0]: サムネイル画像 (メイン画像、材料・道具の画像に使用)
         const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
         // [1]以降: 手順画像 (stepPictures)
 
@@ -601,7 +645,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 4. メタ情報
+        // 4. メタ情報 (変更なし)
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -613,20 +657,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         // 5. メイン画像 (サムネイル: pictures[0])
         detailImageContainer.innerHTML = '';
-        const mainImg = createPictureElement(thumbPic, item.title);
+        const mainImg = createPictureElement(thumbPic, item.title, '250px');
         if (mainImg) {
-            mainImg.style.maxWidth = '100%';
-            mainImg.style.maxHeight = '250px'; 
-            mainImg.style.width = 'auto';
-            mainImg.style.objectFit = 'contain';
-            mainImg.style.borderRadius = '8px';
             mainImg.style.border = '1px solid #ddd';
+            mainImg.style.borderRadius = '8px';
             detailImageContainer.appendChild(mainImg);
         }
 
-        // 6. 材料 (Ingredients)
+        // 6. 材料 (Ingredients) - 大きく表示するために画像コンテナを追加
         detailIngredients.innerHTML = '';
         const ing = item.ingredients || {};
+
+        // 6a. 材料画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
+        const ingPicContainer = document.createElement('div');
+        ingPicContainer.className = 'detail-picture-box';
+        // 200px maxHeightを使用
+        const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px'); 
+        if (ingPic) ingPicContainer.appendChild(ingPic);
+        detailIngredients.appendChild(ingPicContainer);
+
+        // 6b. 材料リストの表示
         if (Object.keys(ing).length === 0){
             detailIngredients.appendChild(elText('div','(材料なし)','muted'));
         } else {
@@ -644,68 +694,82 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         const props = item.props || {};
 
         if (item._type === 'pre') {
-            // type: "pre" の時は道具セクションを表示
             propsSection.style.display = 'block';
 
+            // 7a. 道具画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
+            const propsPicContainer = document.createElement('div');
+            propsPicContainer.className = 'detail-picture-box';
+            // 200px maxHeightを使用
+            const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px'); 
+            if (propsPic) propsPicContainer.appendChild(propsPic);
+            detailProps.appendChild(propsPicContainer);
+            
+            // 7b. 道具リストの表示
             if (Object.keys(props).length === 0){
                 detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
             } else {
                 const ul = document.createElement('ul');
                 for (const k of Object.keys(props)){
                     const li = document.createElement('li');
-                    // キー (k) を削除し、値のみを表示する
                     li.textContent = props[k] || ''; 
                     ul.appendChild(li);
                 }
                 detailProps.appendChild(ul);
             }
         } else {
-            // type: "recipe" の時は道具セクションを非表示
             propsSection.style.display = 'none';
         }
 
-// displayDetail関数内 (約740行目付近)
-
-        // 8. 手順 (Recipe / Pre-Process) + 手順画像 (pictures[1]~)
+        // 8. 手順 (Recipe / Pre-Process) - 3列グリッドで表示
         detailRecipe.innerHTML = '';
         const rec = item.recipe || [];
         
         if (!Array.isArray(rec) || rec.length === 0){
             detailRecipe.appendChild(elText('div','(手順なし)','muted'));
         } else {
-            const container = document.createElement('div'); // 手順全体を囲むコンテナ
-            const ol = document.createElement('ol');
-            
+            // 3列グリッドコンテナ
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'recipe-steps-grid'; 
+
             for (let i = 0; i < rec.length; i++){
                 const step = rec[i];
+                const stepNo = i + 1;
                 
+                // 各手順を囲むカード要素
+                const card = document.createElement('div');
+                card.className = 'recipe-step-card';
+
                 // 1. 手順画像: pictures[1]から順番に取得 (i+1)
                 const stepPicIndex = i + 1; 
                 const stepPicSrc = pictures[stepPicIndex];
 
-                // null (または未定義/空文字列)の場合は画像を表示しない
                 if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
                     const picContainer = document.createElement('div');
                     picContainer.className = 'recipe-step-picture';
-                    const stepImg = createPictureElement(stepPicSrc, `手順${i + 1}の画像`);
+                    // 150px maxHeightを使用
+                    const stepImg = createPictureElement(stepPicSrc, `手順${stepNo}の画像`, '150px'); 
                     
                     if (stepImg) { 
                         picContainer.appendChild(stepImg);
-                        // 画像は <ol> の外、<ol> の前に挿入する
-                        container.appendChild(picContainer); 
+                        card.appendChild(picContainer);
                     }
                 }
                 
-                // 2. 手順テキスト (<li>)
+                // 2. 手順テキスト
+                const ol = document.createElement('ol');
                 const li = document.createElement('li');
+                
+                // CSSの::before擬似要素で番号を表示するため、data属性に手順番号を設定
+                li.setAttribute('data-step', stepNo); 
                 li.textContent = step;
                 
                 ol.appendChild(li);
+                card.appendChild(ol);
+                
+                gridContainer.appendChild(card);
             }
             
-            // 3. 最後に番号付きリスト全体をコンテナに追加
-            container.appendChild(ol);
-            detailRecipe.appendChild(container);
+            detailRecipe.appendChild(gridContainer);
         }
 
         // 9. メモ (Memo)
