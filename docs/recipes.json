@@ -32,7 +32,7 @@
         "しょうがを多めに入れると臭みがやわらぐ。",
         "煮詰めすぎないように注意。"
       ],
-      "pictures": ["https://0128-game.github.io/Fish-recipe/picture/test.png", null, null, null, null, null, null, null]
+      "pictures": ["https://0128-game.github.io/Fish-recipe/picture/test.png", "https://0128-game.github.io/Fish-recipe/picture/test.png", null, null, null, null, null, null]
     },
     "2": {
       "No": "2",
