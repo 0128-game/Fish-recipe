@@ -65,11 +65,30 @@ main{
     display: none !important;
 }
 /* ★★★ list-view クラス: リスト表示時に詳細を非表示にし、コントロールを表示する ★★★ */
-.list-view header {
-    display: flex; /* リストヘッダーを表示 */
+/* --- 画面切り替えのコアCSSルール --- */
+
+/* リスト表示時 (.wrapに.list-viewクラスがある場合) */
+.wrap.list-view header {
+    display: flex; /* ヘッダー（検索、絞り込み）を表示 */
 }
-.list-view .detail-container {
-    display: none; /* 詳細を非表示 */
+.wrap.list-view #recipeTable {
+    display: table; /* レシピ一覧テーブルを表示 */
+}
+.wrap.list-view #message {
+    display: block; /* メッセージ/件数表示を表示 */
+}
+.wrap.list-view #detailContainer {
+    display: none !important; /* 詳細コンテナを非表示 */
+}
+
+/* 詳細表示時 (.wrapに.detail-viewクラスがある場合) */
+.wrap.detail-view header,
+.wrap.detail-view #recipeTable,
+.wrap.detail-view #message {
+    display: none !important; /* リスト表示に必要な要素を全て非表示 */
+}
+.wrap.detail-view #detailContainer {
+    display: block !important; /* 詳細コンテナを確実に表示 */
 }
 /* ★★★ detail-view クラス: 詳細表示時にリストとコントロールを非表示にする ★★★ */
 .detail-view header {
@@ -205,7 +224,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap"　list-view" id="wrap">
     <header>
         <h1>魚レシピ / 下処理管理</h1>
         <div class="controls">
@@ -280,16 +299,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         <div id="detailPictures"></div>
     </div>
 </div>
-            
-            <div class="detail-section">
-                <h3 class="section-title">メモ (Memo)</h3>
-                <div id="detailMemo"></div>
-            </div>
-            
-            <div class="detail-section">
-                <h3 class="section-title">写真リンク / JSONデータ (Debug)</h3>
-                <div id="detailPictures"></div>
-            </div>
         </div>
         </main>
 </div>
@@ -309,7 +318,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         './recipes.json'
     ];
 
-    const wrap = document.querySelector('.wrap'); // ★ .wrap要素を取得
+    const wrap = document.getElementById('wrap');
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
     const filterType = document.getElementById('filterType');
