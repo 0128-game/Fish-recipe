@@ -336,11 +336,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
 </style>
-</head>
-<body>
-<div class="wrap"　list-view" id="wrap">
+
+<div class="wrap" id="wrap">
     <header>
-        <h1>魚レシピ / 下処理管理</h1>
+        <h1>魚のレシピリスト</h1>
         <div class="controls">
             <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
             <select id="filterType">
@@ -348,72 +347,97 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 <option value="recipe">レシピ</option>
                 <option value="pre">下処理</option>
             </select>
+            
+            <select id="filterFish">
+                <option value="all">魚種: 全て</option>
+                </select>
+            
+            <select id="filterDifficulty">
+                <option value="all">難易度: 全て</option>
+                <option value="1">難易度: 1以下</option>
+                <option value="2">難易度: 2以下</option>
+                <option value="3">難易度: 3以下</option>
+                <option value="4">難易度: 4以下</option>
+                <option value="5">難易度: 5以下</option>
+            </select>
+            
+            <div style="display:inline-flex; align-items:center; gap:4px;">
+                <input type="number" id="filterTime" placeholder="時間" style="width:70px; text-align:right;" min="0">
+                <span>分以内</span>
+            </div>
+            
+            <div style="display:inline-flex; align-items:center; gap:4px;">
+                <input type="number" id="filterCost" placeholder="費用" style="width:70px; text-align:right;" min="0">
+                <span>円以内</span>
+            </div>
+            
             <select id="sortBy">
-                <option value="No">No (昇順)</option>
-                <option value="-No">No (降順)</option>
-                <option value="fish-name">魚名</option>
-                <option value="-difficulty">難易度 (難し)</option>
-                <option value="difficulty">難易度 (易し)</option>
-                <option value="time">時間 (短)</option>
-                <option value="-time">時間 (長)</option>
-                <option value="-cost">費用 (高)</option>
-                <option value="cost">費用 (安)</option>
+                <option value="-No">No順 (降順)</option>
+                <option value="No">No順 (昇順)</option>
+                <option value="-difficulty">難易度 (高順)</option>
+                <option value="difficulty">難易度 (低順)</option>
+                <option value="-cost">費用 (高順)</option>
+                <option value="cost">費用 (低順)</option>
+                <option value="-time">時間 (長順)</option>
+                <option value="time">時間 (短順)</option>
+                <option value="title">タイトル</option>
             </select>
             <button id="reloadBtn">データ再読み込み</button>
         </div>
     </header>
 
-<main id="app">
-    <p id="message" class="muted">データを読み込み中です...</p>
-    
-    <table id="recipeTable">
-        <thead>
-            <tr>
-                <th style="width:80px">No</th>
-                <th style="width:80px">Type</th>
-                <th style="width:80px">Picture</th> 
-                <th>Title / flavortxt</th>
-                <th style="width:160px">魚 / 旬</th>
-                <th style="width:120px">難易度 / 時間</th>
-                <th style="width:120px">費用 / その他情報</th>
-                <th style="width:110px">操作</th>
-            </tr>
-        </thead>
-        <tbody id="tbody">
-            </tbody>
-    </table>
+    <main id="app">
+        <p id="message" class="muted">データを読み込み中です...</p>
+        
+        <table id="recipeTable">
+            <thead>
+                <tr>
+                    <th style="width:80px">No</th>
+                    <th style="width:80px">Type</th>
+                    <th style="width:80px">Picture</th> 
+                    <th>Title / flavortxt</th>
+                    <th style="width:160px">魚 / 旬</th>
+                    <th style="width:120px">難易度 / 時間</th>
+                    <th style="width:120px">費用 / その他情報</th>
+                    <th style="width:110px">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                </tbody>
+        </table>
 
-    <div id="detailContainer" class="detail-container hidden">
-        <div class="detail-header">
-            <button id="backToListBtn" class="back-button">← リストに戻る</button>
-            <h2 id="detailTitle"></h2>
-            <div id="detailSubtitle" class="muted"></div>
-            <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
-            <div id="detailMeta" class="meta"></div>
-        </div>
-        
-<div class="detail-grid">
+        <div id="detailContainer" class="detail-container hidden">
+            <div class="detail-header">
+                <button id="backToListBtn" class="back-button">← リストに戻る</button>
+                <h2 id="detailTitle"></h2>
+                <div id="detailSubtitle" class="muted"></div>
+                <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
+                <div id="detailMeta" class="meta"></div>
+            </div>
+            
+            <div class="detail-grid">
+                <div class="detail-section">
+                    <h3 class="section-title">材料 (Ingredients)</h3>
+                    <div id="detailIngredients"></div>
+                </div>
+                <div class="detail-section" id="propsSection">
+                    <h3 class="section-title">道具 (Props)</h3>
+                    <div id="detailProps"></div>
+                </div>
+                <div class="detail-section">
+                    <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
+                    <div id="detailRecipe"></div>
+                </div>
+            </div>
+            
             <div class="detail-section">
-                <h3 class="section-title">材料 (Ingredients)</h3>
-                <div id="detailIngredients"></div>
-            </div>
-            <div class="detail-section" id="propsSection">
-                <h3 class="section-title">道具 (Props)</h3>
-                <div id="detailProps"></div>
-            </div>
-            <div class="detail-section">
-                <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
-                <div id="detailRecipe"></div>
+                <h3 class="section-title">メモ (Memo)</h3>
+                <div id="detailMemo"></div>
             </div>
         </div>
-        
-        <div class="detail-section">
-            <h3 class="section-title">メモ (Memo)</h3>
-            <div id="detailMemo"></div>
-        </div>
-    </div>
-</main>
+    </main>
 </div>
+
 <script>
 /*
   expectations:
@@ -438,6 +462,12 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const reloadBtn = document.getElementById('reloadBtn');
     const message = document.getElementById('message');
 
+    // ★★★ 新しいフィルター要素の定義 ★★★
+    const filterFish = document.getElementById('filterFish'); 
+    const filterDifficulty = document.getElementById('filterDifficulty');
+    const filterTime = document.getElementById('filterTime');
+    const filterCost = document.getElementById('filterCost');
+
     // 詳細コンテナの要素
     const detailContainer = document.getElementById('detailContainer');
     const detailTitle = document.getElementById('detailTitle');
@@ -447,7 +477,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailIngredients = document.getElementById('detailIngredients');
     const detailRecipe = document.getElementById('detailRecipe');
     const detailMemo = document.getElementById('detailMemo');
-    // detailPictures は削除されました
     const backToListBtn = document.getElementById('backToListBtn'); 
     const detailProps = document.getElementById('detailProps');
     const propsSection = document.getElementById('propsSection'); 
@@ -456,7 +485,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     let flatList = []; // merged list with type annotation
     let currentRawPath = null;
     
-    // ★★★ 画面切り替えのコア関数 (追加) ★★★
+    // ★★★ 画面切り替えのコア関数 ★★★
     function showList(){
         wrap.classList.remove('detail-view');
         wrap.classList.add('list-view');
@@ -469,7 +498,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Utility: safe text node creation (追加)
+    // Utility: safe text node creation
     function elText(tag, text, cls){
         const el = document.createElement(tag);
         if (cls) el.className = cls;
@@ -527,8 +556,38 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         if (val === undefined || val === null) return '';
         return String(val);
     }
-
+    
     function clearTable(){ tbody.innerHTML = ''; }
+    
+    // 魚種のユニークリストを取得し、フィルタードロップダウンに設定する
+    function populateFishFilter(list){
+        // レシピアイテムからすべての魚種を抽出し、重複を排除
+        const fishSet = new Set();
+        list.forEach(item => {
+            if (item._type === 'recipe' && Array.isArray(item['fish-name'])) {
+                item['fish-name'].forEach(fish => {
+                    const trimmedFish = fish.trim();
+                    if (trimmedFish) {
+                        fishSet.add(trimmedFish);
+                    }
+                });
+            }
+        });
+
+        const uniqueFish = Array.from(fishSet).sort();
+        
+        // 既存のオプションをクリアし、「全て」を再設定
+        filterFish.innerHTML = '<option value="all">魚種: 全て</option>';
+
+        // 新しいオプションを追加
+        uniqueFish.forEach(fish => {
+            const option = document.createElement('option');
+            option.value = fish;
+            option.textContent = fish;
+            filterFish.appendChild(option);
+        });
+    }
+
 
 // render table rows from list
 function renderTable(list){
@@ -606,16 +665,16 @@ function renderTable(list){
         const tdActions = document.createElement('td');
         tdActions.className = 'actions';
         
-        // ★ 詳細ボタンの挙動：下処理が設定されていれば、下処理へ直接遷移
+        // 詳細ボタンの挙動：下処理が設定されていれば、下処理へ直接遷移
         const viewBtn = document.createElement('button');
         viewBtn.textContent = '詳細';
         
         viewBtn.addEventListener('click', ()=> {
             // レシピであり、かつ下処理が設定されている場合
             if (item._type === 'recipe' && item['pre-recipe']) {
-                const preRecipeName = item['pre-recipe'];
-                // flatListから対応する下処理アイテムを探す
-                const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+                const preRecipeNo = String(item['pre-recipe']);
+                // flatListから対応する下処理アイテムを探す (Noで検索)
+                const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
                 
                 if (preItem) {
                     // 下処理が見つかった場合、そちらの詳細画面に遷移
@@ -631,10 +690,7 @@ function renderTable(list){
         tdActions.appendChild(viewBtn);
 
         
-        // ★★★ 一覧表の「下処理へ」ボタンのコードは削除済み ★★★
-
-        
-        // 変更: 印刷ボタン
+        // 印刷ボタン
         const printBtn = document.createElement('button');
         printBtn.textContent = '印刷';
         printBtn.style.background = '#a0aec0'; // 薄いグレー
@@ -653,7 +709,7 @@ function renderTable(list){
     tbody.appendChild(fragment);
 }
 
-// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
+// Utility: 画像を表示するエレメントを作成する関数
 function createPictureElement(src, altText, maxHeight = '250px') {
     if (!src || src === 'null' || src === '') return null;
     
@@ -695,37 +751,30 @@ function displayDetail(item){
     detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
     detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
     
-    // ★ 修正点: 自身が下処理の場合は、下処理参照のピルは表示しない（下のif文の外に移動）
-
-    // ★ 下処理参照の処理 (Noで検索 / なし表示) - レシピの場合にのみ実行
-    if (item._type === 'recipe') {
-         const preRecipeNo = String(item['pre-recipe'] || '').trim(); 
+    // ★ 下処理参照の処理 (Noで検索 / なし表示)
+    if (item._type === 'recipe' && item['pre-recipe']) {
+         const preRecipeNo = String(item['pre-recipe']); 
          
-         if (preRecipeNo) {
-             // pre-recipe が設定されている場合
-             const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
+         // Noで下処理アイテムを検索
+         const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
+         
+         if (preItem) {
+             // 1. 下処理アイテムが見つかった場合 -> クリックできる緑のボタンとして表示
+             const preBtn = document.createElement('button');
+             preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); // タイトル優先で表示
+             preBtn.className = 'pill pre-link-pill'; 
              
-             if (preItem) {
-                 // 1. 下処理アイテムが見つかった場合 -> クリックできるボタンとして表示
-                 const preBtn = document.createElement('button');
-                 preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); 
-                 preBtn.className = 'pill pre-link-pill'; 
-                 
-                 preBtn.addEventListener('click', ()=> displayDetail(preItem));
-                 detailMeta.appendChild(preBtn);
-             } else {
-                // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
-                // ※ このケースは「参照したいけどアイテムがない」状態ですが、要求に基づき「なし」で処理します
-                detailMeta.appendChild(elText('div', '下処理: なし (アイテム未登録)', 'pill'));
-             }
+             preBtn.addEventListener('click', ()=> displayDetail(preItem));
+             detailMeta.appendChild(preBtn);
          } else {
-             // 3. レシピだが pre-recipe が設定されていない場合 -> 通常の「下処理: なし」ピルを表示
-             detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
+            // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
+            detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
          }
-    } 
-    
-    // ★ 新しい位置: 自身が下処理アイテムの場合 (ボタン/参照ピルの代わりに表示)
-    if (item._type === 'pre') {
+    } else if (item._type === 'recipe' && !item['pre-recipe']) {
+        // 3. レシピだが pre-recipe が設定されていない場合 -> 通常の「下処理: なし」ピルを表示
+         detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
+    } else if (item._type === 'pre') {
+         // 4. 自身が下処理アイテムの場合
          detailMeta.appendChild(elText('div', '下処理', 'pill'));
     }
 
@@ -849,20 +898,26 @@ function displayDetail(item){
     }
 }
   
-  function applyFiltersAndRender(){
+function applyFiltersAndRender(){
     const q = (qInput.value || '').trim().toLowerCase();
     const type = filterType.value;
     const sortVal = sortBy.value;
+    
+    // ★★★ 新しいフィルターの値を取得 ★★★
+    const fishName = filterFish.value; 
+    const diff = filterDifficulty.value;
+    const maxTime = parseFloat(filterTime.value);
+    const maxCost = parseFloat(filterCost.value);
+    // ★★★ ここまで ★★★
 
     let list = flatList.slice();
 
     // filter by type
     if (type !== 'all') list = list.filter(i => i._type === type);
 
-    // search across several fields (強化された部分)
+    // search across several fields 
     if (q){
         list = list.filter(item => {
-            // 検索対象のフィールドを全て結合
             const parts = [
                 item.title, item.flavortxt,
                 joinIfArray(item['fish-name']),
@@ -883,6 +938,46 @@ function displayDetail(item){
         });
     }
 
+    // ★★★ 新しいフィルターロジックの適用 ★★★
+    list = list.filter(item => {
+        // 下処理アイテムはこれらのフィルターの対象外
+        if (item._type === 'pre') return true; 
+
+        // 魚種フィルター
+        if (fishName !== 'all') {
+            // item['fish-name']が配列で、かつ選択された魚種を含む場合のみtrue
+            if (!Array.isArray(item['fish-name']) || !item['fish-name'].some(f => f.trim() === fishName)) {
+                return false;
+            }
+        }
+        
+        // 難易度フィルター
+        if (diff !== 'all') {
+            const requiredDiff = parseInt(diff, 10);
+            if (item.difficulty == null || parseFloat(item.difficulty) > requiredDiff) {
+                return false;
+            }
+        }
+        
+        // 時間フィルター (所要時間: time)
+        if (!isNaN(maxTime) && maxTime >= 0) {
+            if (item.time == null || parseFloat(item.time) > maxTime) {
+                return false;
+            }
+        }
+
+        // 費用フィルター (cost)
+        if (!isNaN(maxCost) && maxCost >= 0) {
+            if (item.cost == null || parseFloat(item.cost) > maxCost) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+    // ★★★ ここまで新しいフィルターロジックの適用 ★★★
+
+
     // sort
     const desc = sortVal.startsWith('-');
     const key = desc ? sortVal.slice(1) : sortVal;
@@ -892,12 +987,10 @@ function displayDetail(item){
         const bv = b[key];
         // No の並び替えロジックの改善 (P1, P2, 1, 2)
         if (key === 'No'){
-            // "P1" -> 1.5, "1" -> 1 のようにしてPと数字を分離して比較
             const extractNum = (val) => {
                 const s = String(val||'');
                 const isPre = s.startsWith('P');
                 const num = parseInt(s.replace(/^P/,'') || '0', 10);
-                // 'P' 付きは .5 で表現して通常の番号より前に来るようにする
                 return isPre ? num + 0.5 : num;
             };
             const na = extractNum(av);
@@ -913,57 +1006,70 @@ function displayDetail(item){
         return desc ? bn - an : an - bn;
     });
 
+
     renderTable(list);
     message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
 }
 
-// reload button
-reloadBtn.addEventListener('click', ()=> {
-    loadData();
-});
-
-// ★★★ リストに戻るボタンのイベントリスナー ★★★
-backToListBtn.addEventListener('click', ()=> {
-    showList();
-});
-
-qInput.addEventListener('input', ()=> applyFiltersAndRender());
-filterType.addEventListener('change', ()=> applyFiltersAndRender());
-sortBy.addEventListener('change', ()=> applyFiltersAndRender());
-
-// main loader
-async function loadData(){
-    message.textContent = '読み込み中...';
-    try {
-        const json = await fetchAny(tryPaths);
-        rawData = json;
-        flatList = buildFlatList(json);
-        if (flatList.length === 0){
-            message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
-        } else {
-            message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
-        }
-        applyFiltersAndRender();
-        // データロード完了後、初期表示はリスト画面にする
+    // reload button
+    reloadBtn.addEventListener('click', ()=> {
+        loadData();
+    });
+    
+    // リストに戻るボタンのイベントリスナー
+    backToListBtn.addEventListener('click', ()=> {
         showList();
-    } catch (err){
-        console.error(err);
-        message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
-        clearTable();
-        // エラー時は詳細画面は表示しない
-        wrap.classList.remove('detail-view');
+    });
+
+    qInput.addEventListener('input', ()=> applyFiltersAndRender());
+    filterType.addEventListener('change', ()=> applyFiltersAndRender());
+    sortBy.addEventListener('change', ()=> applyFiltersAndRender());
+    
+    // ★★★ 新しいフィルターのイベントリスナー ★★★
+    filterFish.addEventListener('change', ()=> applyFiltersAndRender());
+    filterDifficulty.addEventListener('change', ()=> applyFiltersAndRender());
+    filterTime.addEventListener('input', ()=> applyFiltersAndRender());
+    filterCost.addEventListener('input', ()=> applyFiltersAndRender());
+    // ★★★ ここまで ★★★
+
+
+    // main loader
+    async function loadData(){
+        message.textContent = '読み込み中...';
+        try {
+            const json = await fetchAny(tryPaths);
+            rawData = json;
+            flatList = buildFlatList(json);
+            
+            // 魚種フィルターのオプションを生成
+            populateFishFilter(flatList); 
+
+            if (flatList.length === 0){
+                message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
+            } else {
+                message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
+            }
+            applyFiltersAndRender();
+            // データロード完了後、初期表示はリスト画面にする
+            showList();
+        } catch (err){
+            console.error(err);
+            message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
+            clearTable();
+            // エラー時は詳細画面は表示しない
+            wrap.classList.remove('detail-view');
+        }
     }
-}
 
-// initial load
-loadData();
+    // initial load
+    loadData();
 
-// Expose for debug on window
-window._recipesApp = {
-    loadData,
-    getRaw: ()=> rawData,
-    getFlat: ()=> flatList
-};
+    // Expose for debug on window
+    window._recipesApp = {
+        loadData,
+        getRaw: ()=> rawData,
+        getFlat: ()=> flatList
+    };
 })();
 </script>
 </body>
