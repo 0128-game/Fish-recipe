@@ -64,7 +64,6 @@ main{
 .hidden {
     display: none !important;
 }
-/* ★★★ list-view クラス: リスト表示時に詳細を非表示にし、コントロールを表示する ★★★ */
 /* --- 画面切り替えのコアCSSルール --- */
 
 /* リスト表示時 (.wrapに.list-viewクラスがある場合) */
@@ -90,7 +89,6 @@ main{
 .wrap.detail-view #detailContainer {
     display: block !important; /* 詳細コンテナを確実に表示 */
 }
-/* ★★★ detail-view クラス: 詳細表示時にリストとコントロールを非表示にする ★★★ */
 .detail-view header {
     display: none; /* リストヘッダーを非表示 */
 }
@@ -138,6 +136,20 @@ tbody td:nth-child(8){ /* 操作 */
 tbody tr:hover{background:rgba(43,108,176,0.03)}
 .muted{color:var(--muted);font-size:0.85rem}
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
+/* ★ 下処理ボタンのスタイル */
+.pre-link-pill {
+    background-color: #f0fff4 !important; /* 薄いグリーン系 */
+    color: #2f855a !important; /* 濃いグリーン系 */
+    border: 1px solid #2f855a !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+.pre-link-pill:hover {
+    background-color: #e6fffa !important; /* ホバーでさらに明るく */
+    box-shadow: 0 1px 3px rgba(47, 133, 90, 0.2);
+}
+
 .actions button{margin-right:6px}
 .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
 .type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
@@ -254,7 +266,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     border: 1px solid #eef;
     padding: 15px;
     border-radius: 8px;
-    /* min-heightは削除または小さくし、コンテンツに合わせる */
     display: flex;
     flex-direction: column;
 }
@@ -296,22 +307,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     .recipe-steps-grid {
         grid-template-columns: 1fr; /* 画面が狭いときは1列にする */
     }
-}
-
-  /* 詳細画面のメタ情報（.meta）内の下処理ボタンのスタイル */
-.pre-link-pill {
-    /* pillクラスのスタイルを上書き/強化 */
-    background-color: #f0fff4 !important; /* 薄いグリーン系 */
-    color: #2f855a !important; /* 濃いグリーン系 */
-    border: 1px solid #2f855a !important;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    font-weight: bold;
-    /* pillクラスはdisplay:inline-blockを持つため、ボタンとして機能する */
-}
-.pre-link-pill:hover {
-    background-color: #e6fffa !important; /* ホバーでさらに明るく */
-    box-shadow: 0 1px 3px rgba(47, 133, 90, 0.2);
 }
   
 .notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
@@ -626,7 +621,7 @@ function renderTable(list){
             }
         }
         
-        // 変更: JSONボタンを印刷ボタンに置き換え
+        // 変更: 印刷ボタン
         const printBtn = document.createElement('button');
         printBtn.textContent = '印刷';
         printBtn.style.background = '#a0aec0'; // 薄いグレー
@@ -644,7 +639,7 @@ function renderTable(list){
     }
     tbody.appendChild(fragment);
 }
-// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
+  // Utility: 画像を表示するエレメントを作成する関数 (変更なし)
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
         
