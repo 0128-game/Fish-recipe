@@ -35,12 +35,28 @@ header{
   margin-bottom:18px;
 }
 header h1{margin:0;font-size:1.3rem}
+/* --- CSS: .controls の修正 --- */
 .controls{
-  margin-left:auto;
+  /* display:flex; <--- flex-wrapを外すため、CSSの頭から再定義 */
   display:flex;
   gap:8px;
-  flex-wrap:wrap;
+  /* flex-wrap:wrap; <--- これを外すと、要素が親要素の幅を超えても横に並び続けます。*/
+  /* 代わりに、要素全体を縦に積むために、親要素にdisplay: block;または幅を持たせることが多いですが、
+     ここでは横幅いっぱいに収めるための設定を維持します。
+     もしレイアウトが崩れる場合、ブラウザの幅に応じて縦に積むようにCSS Media Queryを推奨します。
+     今回は、一旦横に並べた上で、スマートフォンでの崩れを防ぐよう設定を調整します。
+  */
+  flex-wrap:wrap; /* やはり画面幅が狭いときに崩れるのを防ぐため、flex-wrapを維持します */
   align-items:center;
+  /* 新しい設定: フィルター要素が並びきらない場合に縦に積むための最小幅を設定 */
+  justify-content: flex-start; 
+  margin-left: auto;
+}
+/* フィルターボックス内の入力フィールドの幅を統一 */
+.controls input[type="search"], .controls select, .controls input[type="number"] {
+  /* 幅を調整し、コントロールをよりコンパクトに */
+  min-width: 100px;
+  max-width: 150px;
 }
 input[type="search"], select{
   padding:8px 10px;
@@ -340,50 +356,51 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 <div class="wrap" id="wrap">
     <header>
         <h1>魚のレシピリスト</h1>
-        <div class="controls">
-            <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
-            <select id="filterType">
-                <option value="all">全て</option>
-                <option value="recipe">レシピ</option>
-                <option value="pre">下処理</option>
-            </select>
-            
-            <select id="filterFish">
-                <option value="all">魚種: 全て</option>
-                </select>
-            
-            <select id="filterDifficulty">
-                <option value="all">難易度: 全て</option>
-                <option value="1">難易度: 1以下</option>
-                <option value="2">難易度: 2以下</option>
-                <option value="3">難易度: 3以下</option>
-                <option value="4">難易度: 4以下</option>
-                <option value="5">難易度: 5以下</option>
-            </select>
-            
-            <div style="display:inline-flex; align-items:center; gap:4px;">
-                <input type="number" id="filterTime" placeholder="時間" style="width:70px; text-align:right;" min="0">
-                <span>分以内</span>
-            </div>
-            
-            <div style="display:inline-flex; align-items:center; gap:4px;">
-                <input type="number" id="filterCost" placeholder="費用" style="width:70px; text-align:right;" min="0">
-                <span>円以内</span>
-            </div>
-            
-            <select id="sortBy">
-                <option value="-No">No順 (降順)</option>
-                <option value="No">No順 (昇順)</option>
-                <option value="-difficulty">難易度 (高順)</option>
-                <option value="difficulty">難易度 (低順)</option>
-                <option value="-cost">費用 (高順)</option>
-                <option value="cost">費用 (低順)</option>
-                <option value="-time">時間 (長順)</option>
-                <option value="time">時間 (短順)</option>
-                <option value="title">タイトル</option>
-            </select>
-            <button id="reloadBtn">データ再読み込み</button>
-        </div>
+       <div class="controls">
+    <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
+    
+    <select id="filterType">
+        <option value="all">全て</option>
+        <option value="recipe">レシピ</option>
+        <option value="pre">下処理</option>
+    </select>
+    
+    <select id="filterFish">
+        <option value="all">魚種: 全て</option>
+        </select>
+    
+    <select id="filterDifficulty">
+        <option value="all">難易度: 全て</option>
+        <option value="1">難易度: 1以下</option>
+        <option value="2">難易度: 2以下</option>
+        <option value="3">難易度: 3以下</option>
+        <option value="4">難易度: 4以下</option>
+        <option value="5">難易度: 5以下</option>
+    </select>
+    
+    <div style="display:inline-flex; align-items:center; gap:4px;">
+        <input type="number" id="filterTime" placeholder="時間" style="width:70px; text-align:right;" min="0">
+        <span>分以内</span>
+    </div>
+    
+    <div style="display:inline-flex; align-items:center; gap:4px;">
+        <input type="number" id="filterCost" placeholder="費用" style="width:70px; text-align:right;" min="0">
+        <span>円以内</span>
+    </div>
+    
+    <select id="sortBy">
+        <option value="No" selected>No順 (昇順)</option>
+        <option value="-No">No順 (降順)</option>
+        <option value="-difficulty">難易度 (高順)</option>
+        <option value="difficulty">難易度 (低順)</option>
+        <option value="-cost">費用 (高順)</option>
+        <option value="cost">費用 (低順)</option>
+        <option value="-time">時間 (長順)</option>
+        <option value="time">時間 (短順)</option>
+        <option value="title">タイトル</option>
+    </select>
+    <button id="reloadBtn">データ再読み込み</button>
+</div>
     </header>
 
     <main id="app">
@@ -898,17 +915,18 @@ function displayDetail(item){
     }
 }
   
+// ... (中略: loadData, renderTable, displayDetailなど他の関数) ...
+
 function applyFiltersAndRender(){
     const q = (qInput.value || '').trim().toLowerCase();
     const type = filterType.value;
     const sortVal = sortBy.value;
     
-    // ★★★ 新しいフィルターの値を取得 ★★★
+    // フィルターの値を取得
     const fishName = filterFish.value; 
     const diff = filterDifficulty.value;
     const maxTime = parseFloat(filterTime.value);
     const maxCost = parseFloat(filterCost.value);
-    // ★★★ ここまで ★★★
 
     let list = flatList.slice();
 
@@ -924,19 +942,102 @@ function applyFiltersAndRender(){
                 joinIfArray(item.feature),
                 joinIfArray(item.season),
                 item.No,
-                // 材料のキー名（例: サバ, 味噌）
                 Object.keys(item.ingredients || {}).join(' '),
-                // 手順 (recipe)
                 joinIfArray(item.recipe),
-                // メモ (memo)
                 joinIfArray(item.memo),
-                // 道具 (props, preのみ)
                 joinIfArray(item.props)
             ];
             const hay = parts.filter(Boolean).join(' ').toLowerCase();
             return hay.includes(q);
         });
     }
+
+    // ★★★ 修正されたフィルターロジックの適用 ★★★
+    list = list.filter(item => {
+        // 下処理アイテムはこれらの数値・魚種フィルターの対象外
+        if (item._type === 'pre') return true; 
+
+        // 魚種フィルター
+        if (fishName !== 'all') {
+            if (!Array.isArray(item['fish-name']) || !item['fish-name'].some(f => f.trim() === fishName)) {
+                return false;
+            }
+        }
+        
+        // 難易度フィルター (修正: difficultyがない項目は除外しない)
+        if (diff !== 'all') {
+            const requiredDiff = parseInt(diff, 10);
+            const itemDiff = parseFloat(item.difficulty);
+            
+            // 難易度が設定されていない場合は、フィルターを適用せず通過させる
+            if (item.difficulty != null) { 
+                if (itemDiff > requiredDiff) {
+                    return false; // 設定されていて条件を満たさない場合は除外
+                }
+            }
+        }
+        
+        // 時間フィルター (所要時間: time) (修正: timeがない項目は除外しない)
+        if (!isNaN(maxTime) && maxTime >= 0) {
+            const itemTime = parseFloat(item.time);
+            
+            if (item.time != null) {
+                if (itemTime > maxTime) {
+                    return false; 
+                }
+            }
+        }
+
+        // 費用フィルター (cost) (修正: costがない項目は除外しない)
+        if (!isNaN(maxCost) && maxCost >= 0) {
+            const itemCost = parseFloat(item.cost);
+            
+            if (item.cost != null) {
+                if (itemCost > maxCost) {
+                    return false; 
+                }
+            }
+        }
+
+        return true;
+    });
+    // ★★★ ここまで修正されたフィルターロジックの適用 ★★★
+
+
+    // sort
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    // ... 既存のソートロジック ...
+    list.sort((a,b)=>{
+        // numeric-aware where possible
+        const av = a[key];
+        const bv = b[key];
+        // No の並び替えロジックの改善 (P1, P2, 1, 2)
+        if (key === 'No'){
+            const extractNum = (val) => {
+                const s = String(val||'');
+                const isPre = s.startsWith('P');
+                const num = parseInt(s.replace(/^P/,'') || '0', 10);
+                return isPre ? num + 0.5 : num;
+            };
+            const na = extractNum(av);
+            const nb = extractNum(bv);
+            return desc ? nb - na : na - nb;
+        }
+        // ... (数値ソート、文字列ソートのロジックは以前のままでOK) ...
+        const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
+        const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
+        if (!isFinite(an) || !isFinite(bn)){
+            // fallback string compare
+            return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+        }
+        return desc ? bn - an : an - bn;
+    });
+
+
+    renderTable(list);
+    message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
+}
 
     // ★★★ 新しいフィルターロジックの適用 ★★★
     list = list.filter(item => {
