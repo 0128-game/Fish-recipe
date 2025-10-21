@@ -136,19 +136,44 @@ tbody td:nth-child(8){ /* 操作 */
 tbody tr:hover{background:rgba(43,108,176,0.03)}
 .muted{color:var(--muted);font-size:0.85rem}
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
-/* ★ 下処理ボタンのスタイル */
+
+/* ★ 下処理ボタンのスタイルを強調 (最終調整版) ★ */
 .pre-link-pill {
-    background-color: #f0fff4 !important; /* 薄いグリーン系 */
-    color: #2f855a !important; /* 濃いグリーン系 */
-    border: 1px solid #2f855a !important;
+    /* 基礎デザインの調整 */
+    background-color: #48bb78 !important; /* 目立つ明るいグリーン */
+    color: white !important; /* テキストを白にしてコントラストを確保 */
+    border: 1px solid #38a169 !important;
     cursor: pointer;
-    transition: background-color 0.2s;
     font-weight: bold;
+    padding: 6px 12px; /* パディングを少し増やして押しやすく */
+    
+    /* ホバー時の変化を滑らかに */
+    transition: all 0.2s ease-in-out; 
+    
+    /* リンク/ボタンであることをアピール */
+    position: relative; 
+    overflow: hidden; /* ホバーエフェクトの準備 */
 }
+
+/* テキストの前にアイコン/矢印を追加 */
+.pre-link-pill::before {
+    content: "↪"; /* 戻る/進む矢印のようなユニコード文字 */
+    font-size: 1.1em;
+    font-weight: 900;
+    margin-right: 6px;
+    display: inline-block;
+}
+
 .pre-link-pill:hover {
-    background-color: #e6fffa !important; /* ホバーでさらに明るく */
-    box-shadow: 0 1px 3px rgba(47, 133, 90, 0.2);
+    /* ホバーで色が濃く沈む */
+    background-color: #38a169 !important; 
+    /* 強調のために影を追加 */
+    box-shadow: 0 4px 10px rgba(72, 187, 120, 0.4); 
+    /* スケールアップして「押せる感」を出す */
+    transform: translateY(-1px);
 }
+/* --- 上記で下処理ボタンのスタイル終了 --- */
+
 
 .actions button{margin-right:6px}
 .tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
