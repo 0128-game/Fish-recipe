@@ -506,6 +506,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     function clearTable(){ tbody.innerHTML = ''; }
 
 // render table rows from list
+// render table rows from list
 function renderTable(list){
     clearTable();
     if (!Array.isArray(list) || list.length === 0){
@@ -581,7 +582,7 @@ function renderTable(list){
         const tdActions = document.createElement('td');
         tdActions.className = 'actions';
         
-        // ★★★ 修正箇所: 詳細ボタンの挙動を変更（下処理へ直接遷移） ★★★
+        // ★ 詳細ボタンの挙動：下処理が設定されていれば、下処理へ直接遷移
         const viewBtn = document.createElement('button');
         viewBtn.textContent = '詳細';
         
@@ -599,27 +600,15 @@ function renderTable(list){
                 }
             }
             
-            // それ以外の場合（下処理アイテム、または下処理のないレシピ）、自分の詳細画面に遷移
+            // それ以外の場合、自分の詳細画面に遷移
             displayDetail(item);
         });
         
         tdActions.appendChild(viewBtn);
-        // ★★★ 修正箇所終了 ★★★
 
+        
+        // ★★★ 削除: ここにあった一覧表の「下処理へ」ボタンのコードは削除されました ★★★
 
-        // 新規追加: レシピの場合のみ、関連する下処理へ飛ぶボタン
-        if (item._type === 'recipe' && item['pre-recipe']) {
-            const preRecipeName = item['pre-recipe'];
-            const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
-            
-            if (preItem) {
-                const preBtn = document.createElement('button');
-                preBtn.textContent = '下処理へ';
-                preBtn.style.background = '#4a5568'; // グレー系
-                preBtn.addEventListener('click', ()=> displayDetail(preItem));
-                tdActions.appendChild(preBtn);
-            }
-        }
         
         // 変更: 印刷ボタン
         const printBtn = document.createElement('button');
@@ -638,8 +627,7 @@ function renderTable(list){
         fragment.appendChild(tr);
     }
     tbody.appendChild(fragment);
-}
-  // Utility: 画像を表示するエレメントを作成する関数 (変更なし)
+}// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
         
@@ -672,7 +660,7 @@ function renderTable(list){
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 4. メタ情報 (★修正箇所)
+        // 4. メタ情報 (★表示ロジックを再確認)
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -684,24 +672,24 @@ function renderTable(list){
         // ★ 下処理参照が設定されている場合、ボタン/リンクとして表示する
         if (item['pre-recipe'] && item._type === 'recipe') {
              const preRecipeName = item['pre-recipe'];
+             // flatListはグローバル変数なので、ここで使用可能
              const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
              
              if (preItem) {
                  const preBtn = document.createElement('button');
                  preBtn.textContent = '下処理: ' + preRecipeName;
-                 preBtn.className = 'pill pre-link-pill'; // スタイル用クラス
-                 preBtn.style.border = '1px solid #2b6cb0';
-                 preBtn.style.cursor = 'pointer';
-                 preBtn.style.backgroundColor = '#eef5ff';
-                 preBtn.style.fontWeight = 'bold';
+                 preBtn.className = 'pill pre-link-pill'; // CSSを適用
+                 
+                 // ここで追加のstyle設定は削除し、CSSファイルに任せることで表示を統一します
+                 
                  preBtn.addEventListener('click', ()=> displayDetail(preItem));
                  detailMeta.appendChild(preBtn);
              } else {
-                // 見つからない場合はテキストとして表示
+                // 下処理アイテムが見つからない場合は単なるテキストピルとして表示
                 detailMeta.appendChild(elText('div', '下処理参照: ' + preRecipeName, 'pill'));
              }
         } else if (item._type === 'pre') {
-             // 下処理アイテムの場合
+             // 自身が下処理アイテムの場合
              detailMeta.appendChild(elText('div', '下処理', 'pill'));
         }
 
@@ -714,18 +702,15 @@ function renderTable(list){
             detailImageContainer.appendChild(mainImg);
         }
 
-        // 6. 材料 (Ingredients) - 大きく表示するために画像コンテナを追加
+        // 6. 材料 (Ingredients)
         detailIngredients.innerHTML = '';
         const ing = item.ingredients || {};
-
-        // 6a. 材料画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
         const ingPicContainer = document.createElement('div');
         ingPicContainer.className = 'detail-picture-box';
         const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px'); 
         if (ingPic) ingPicContainer.appendChild(ingPic);
         detailIngredients.appendChild(ingPicContainer);
 
-        // 6b. 材料リストの表示
         if (Object.keys(ing).length === 0){
             detailIngredients.appendChild(elText('div','(材料なし)','muted'));
         } else {
@@ -738,21 +723,19 @@ function renderTable(list){
             detailIngredients.appendChild(ul);
         }
 
-        // 7. 道具 (Props) - type:"pre"の時のみ表示
+        // 7. 道具 (Props)
         detailProps.innerHTML = ''; 
         const props = item.props || {};
 
         if (item._type === 'pre') {
             propsSection.style.display = 'block';
 
-            // 7a. 道具画像をメイン画像と同じ大きさで表示 (pictures[0]を使用)
             const propsPicContainer = document.createElement('div');
             propsPicContainer.className = 'detail-picture-box';
             const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px'); 
             if (propsPic) propsPicContainer.appendChild(propsPic);
             detailProps.appendChild(propsPicContainer);
             
-            // 7b. 道具リストの表示
             if (Object.keys(props).length === 0){
                 detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
             } else {
@@ -785,7 +768,7 @@ function renderTable(list){
                 const card = document.createElement('div');
                 card.className = 'recipe-step-card';
 
-                // 1. 手順画像: pictures[1]から順番に取得 (i+1)
+                // 1. 手順画像
                 const stepPicIndex = i + 1; 
                 const stepPicSrc = pictures[stepPicIndex];
 
@@ -828,9 +811,8 @@ function renderTable(list){
             }
             detailMemo.appendChild(ulm);
         }
-
-        // 10. (削除済み)
-    }    // filter/sort logic
+    }
+  
     function applyFiltersAndRender(){
         // ... (省略) ...
         const q = (qInput.value || '').trim().toLowerCase();
