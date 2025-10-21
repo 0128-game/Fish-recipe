@@ -695,31 +695,37 @@ function displayDetail(item){
     detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
     detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
     
-    // ★ 下処理参照の処理 (Noで検索 / なし表示)
-    if (item._type === 'recipe' && item['pre-recipe']) {
-         // pre-recipe の値は No になると想定します
-         const preRecipeNo = String(item['pre-recipe']); 
+    // ★ 修正点: 自身が下処理の場合は、下処理参照のピルは表示しない（下のif文の外に移動）
+
+    // ★ 下処理参照の処理 (Noで検索 / なし表示) - レシピの場合にのみ実行
+    if (item._type === 'recipe') {
+         const preRecipeNo = String(item['pre-recipe'] || '').trim(); 
          
-         // Noで下処理アイテムを検索 (★修正点: title -> No)
-         const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
-         
-         if (preItem) {
-             // 1. 下処理アイテムが見つかった場合 -> クリックできる緑のボタンとして表示
-             const preBtn = document.createElement('button');
-             preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); // タイトル優先で表示
-             preBtn.className = 'pill pre-link-pill'; 
+         if (preRecipeNo) {
+             // pre-recipe が設定されている場合
+             const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
              
-             preBtn.addEventListener('click', ()=> displayDetail(preItem));
-             detailMeta.appendChild(preBtn);
+             if (preItem) {
+                 // 1. 下処理アイテムが見つかった場合 -> クリックできるボタンとして表示
+                 const preBtn = document.createElement('button');
+                 preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); 
+                 preBtn.className = 'pill pre-link-pill'; 
+                 
+                 preBtn.addEventListener('click', ()=> displayDetail(preItem));
+                 detailMeta.appendChild(preBtn);
+             } else {
+                // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
+                // ※ このケースは「参照したいけどアイテムがない」状態ですが、要求に基づき「なし」で処理します
+                detailMeta.appendChild(elText('div', '下処理: なし (アイテム未登録)', 'pill'));
+             }
          } else {
-            // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
-            detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
+             // 3. レシピだが pre-recipe が設定されていない場合 -> 通常の「下処理: なし」ピルを表示
+             detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
          }
-    } else if (item._type === 'recipe' && !item['pre-recipe']) {
-        // 3. レシピだが pre-recipe が設定されていない場合 -> 通常の「下処理: なし」ピルを表示
-         detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
-    } else if (item._type === 'pre') {
-         // 4. 自身が下処理アイテムの場合
+    } 
+    
+    // ★ 新しい位置: 自身が下処理アイテムの場合 (ボタン/参照ピルの代わりに表示)
+    if (item._type === 'pre') {
          detailMeta.appendChild(elText('div', '下処理', 'pill'));
     }
 
@@ -841,8 +847,9 @@ function displayDetail(item){
         }
         detailMemo.appendChild(ulm);
     }
-}  
-function applyFiltersAndRender(){
+}
+  
+  function applyFiltersAndRender(){
     const q = (qInput.value || '').trim().toLowerCase();
     const type = filterType.value;
     const sortVal = sortBy.value;
