@@ -431,7 +431,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     let flatList = []; // merged list with type annotation
     let currentRawPath = null;
     
-    // ★★★ 画面切り替えのコア関数 ★★★
+    // ★★★ 画面切り替えのコア関数 (追加) ★★★
     function showList(){
         wrap.classList.remove('detail-view');
         wrap.classList.add('list-view');
@@ -444,7 +444,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Utility: safe text node creation
+    // Utility: safe text node creation (追加)
     function elText(tag, text, cls){
         const el = document.createElement(tag);
         if (cls) el.className = cls;
@@ -505,7 +505,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     function clearTable(){ tbody.innerHTML = ''; }
 
-// render table rows from list
 // render table rows from list
 function renderTable(list){
     clearTable();
@@ -607,7 +606,7 @@ function renderTable(list){
         tdActions.appendChild(viewBtn);
 
         
-        // ★★★ 削除: ここにあった一覧表の「下処理へ」ボタンのコードは削除されました ★★★
+        // ★★★ 一覧表の「下処理へ」ボタンのコードは削除済み ★★★
 
         
         // 変更: 印刷ボタン
@@ -627,308 +626,307 @@ function renderTable(list){
         fragment.appendChild(tr);
     }
     tbody.appendChild(fragment);
-}// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
-    function createPictureElement(src, altText, maxHeight = '250px') {
-        if (!src || src === 'null' || src === '') return null;
-        
-        const img = document.createElement('img');
-        img.src = src;
-        img.alt = altText || '画像';
-        
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = maxHeight; 
-        img.style.width = 'auto';
-        img.style.objectFit = 'contain';
-        img.style.borderRadius = '4px';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-        
-        return img;
-    }
+}
+
+// Utility: 画像を表示するエレメントを作成する関数 (変更なし)
+function createPictureElement(src, altText, maxHeight = '250px') {
+    if (!src || src === 'null' || src === '') return null;
     
-    // 詳細情報を同じページ内のコンテナに表示する関数
-    function displayDetail(item){
-        
-        // 1. 画面を詳細表示に切り替える
-        showDetail(); 
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = altText || '画像';
+    
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = maxHeight; 
+    img.style.width = 'auto';
+    img.style.objectFit = 'contain';
+    img.style.borderRadius = '4px';
+    img.style.display = 'block';
+    img.style.margin = '0 auto';
+    
+    return img;
+}
 
-        // 2. 画像パスの割り当てとインデックス再定義
-        const pictures = item.pictures || [];
-        const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
+// 詳細情報を同じページ内のコンテナに表示する関数
+function displayDetail(item){
+    
+    // 1. 画面を詳細表示に切り替える
+    showDetail(); 
 
-        // 3. ヘッダー情報
-        detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
-        detailSubtitle.textContent = item.flavortxt || '';
+    // 2. 画像パスの割り当てとインデックス再定義
+    const pictures = item.pictures || [];
+    const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
 
-        // 4. メタ情報 (★表示ロジックを再確認)
-        detailMeta.innerHTML = '';
-        detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
-        detailMeta.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'pill'));
-        detailMeta.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
-        detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
-        
-        // ★ 下処理参照が設定されている場合、ボタン/リンクとして表示する
-        if (item['pre-recipe'] && item._type === 'recipe') {
-             const preRecipeName = item['pre-recipe'];
-             // flatListはグローバル変数なので、ここで使用可能
-             const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+    // 3. ヘッダー情報
+    detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
+    detailSubtitle.textContent = item.flavortxt || '';
+
+    // 4. メタ情報 (★修正の核となる部分)
+    detailMeta.innerHTML = '';
+    detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
+    detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
+    detailMeta.appendChild(elText('div', '旬: ' + joinIfArray(item.season), 'pill'));
+    detailMeta.appendChild(elText('div', '難易度: ' + (item.difficulty != null ? item.difficulty : '-'), 'pill'));
+    detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
+    detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
+    
+    // ★ 下処理参照が設定されている場合、ボタン/リンクとして表示する
+    if (item['pre-recipe'] && item._type === 'recipe') {
+         const preRecipeName = item['pre-recipe'];
+         // flatListはグローバル変数なので、ここで使用可能
+         const preItem = flatList.find(i => i._type === 'pre' && i.title === preRecipeName);
+         
+         if (preItem) {
+             const preBtn = document.createElement('button');
+             preBtn.textContent = '下処理: ' + preRecipeName;
+             preBtn.className = 'pill pre-link-pill'; // CSSを適用
              
-             if (preItem) {
-                 const preBtn = document.createElement('button');
-                 preBtn.textContent = '下処理: ' + preRecipeName;
-                 preBtn.className = 'pill pre-link-pill'; // CSSを適用
-                 
-                 // ここで追加のstyle設定は削除し、CSSファイルに任せることで表示を統一します
-                 
-                 preBtn.addEventListener('click', ()=> displayDetail(preItem));
-                 detailMeta.appendChild(preBtn);
-             } else {
-                // 下処理アイテムが見つからない場合は単なるテキストピルとして表示
-                detailMeta.appendChild(elText('div', '下処理参照: ' + preRecipeName, 'pill'));
-             }
-        } else if (item._type === 'pre') {
-             // 自身が下処理アイテムの場合
-             detailMeta.appendChild(elText('div', '下処理', 'pill'));
+             preBtn.addEventListener('click', ()=> displayDetail(preItem));
+             detailMeta.appendChild(preBtn);
+         } else {
+            // 下処理アイテムが見つからない場合は単なるテキストピルとして表示
+            detailMeta.appendChild(elText('div', '下処理参照: ' + preRecipeName, 'pill'));
+         }
+    } else if (item._type === 'pre') {
+         // 自身が下処理アイテムの場合
+         detailMeta.appendChild(elText('div', '下処理', 'pill'));
+    }
+
+    // 5. メイン画像 (サムネイル: pictures[0])
+    detailImageContainer.innerHTML = '';
+    const mainImg = createPictureElement(thumbPic, item.title, '250px');
+    if (mainImg) {
+        mainImg.style.border = '1px solid #ddd';
+        mainImg.style.borderRadius = '8px';
+        detailImageContainer.appendChild(mainImg);
+    }
+
+    // 6. 材料 (Ingredients)
+    detailIngredients.innerHTML = '';
+    const ing = item.ingredients || {};
+    const ingPicContainer = document.createElement('div');
+    ingPicContainer.className = 'detail-picture-box';
+    const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px'); 
+    if (ingPic) ingPicContainer.appendChild(ingPic);
+    detailIngredients.appendChild(ingPicContainer);
+
+    if (Object.keys(ing).length === 0){
+        detailIngredients.appendChild(elText('div','(材料なし)','muted'));
+    } else {
+        const ul = document.createElement('ul');
+        for (const k of Object.keys(ing)){
+            const li = document.createElement('li');
+            li.textContent = k + ': ' + (ing[k] || '');
+            ul.appendChild(li);
         }
+        detailIngredients.appendChild(ul);
+    }
 
-        // 5. メイン画像 (サムネイル: pictures[0])
-        detailImageContainer.innerHTML = '';
-        const mainImg = createPictureElement(thumbPic, item.title, '250px');
-        if (mainImg) {
-            mainImg.style.border = '1px solid #ddd';
-            mainImg.style.borderRadius = '8px';
-            detailImageContainer.appendChild(mainImg);
-        }
+    // 7. 道具 (Props)
+    detailProps.innerHTML = ''; 
+    const props = item.props || {};
 
-        // 6. 材料 (Ingredients)
-        detailIngredients.innerHTML = '';
-        const ing = item.ingredients || {};
-        const ingPicContainer = document.createElement('div');
-        ingPicContainer.className = 'detail-picture-box';
-        const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px'); 
-        if (ingPic) ingPicContainer.appendChild(ingPic);
-        detailIngredients.appendChild(ingPicContainer);
+    if (item._type === 'pre') {
+        propsSection.style.display = 'block';
 
-        if (Object.keys(ing).length === 0){
-            detailIngredients.appendChild(elText('div','(材料なし)','muted'));
+        const propsPicContainer = document.createElement('div');
+        propsPicContainer.className = 'detail-picture-box';
+        const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px'); 
+        if (propsPic) propsPicContainer.appendChild(propsPic);
+        detailProps.appendChild(propsPicContainer);
+        
+        if (Object.keys(props).length === 0){
+            detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
         } else {
             const ul = document.createElement('ul');
-            for (const k of Object.keys(ing)){
+            for (const k of Object.keys(props)){
                 const li = document.createElement('li');
-                li.textContent = k + ': ' + (ing[k] || '');
+                li.textContent = props[k] || ''; 
                 ul.appendChild(li);
             }
-            detailIngredients.appendChild(ul);
+            detailProps.appendChild(ul);
         }
-
-        // 7. 道具 (Props)
-        detailProps.innerHTML = ''; 
-        const props = item.props || {};
-
-        if (item._type === 'pre') {
-            propsSection.style.display = 'block';
-
-            const propsPicContainer = document.createElement('div');
-            propsPicContainer.className = 'detail-picture-box';
-            const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px'); 
-            if (propsPic) propsPicContainer.appendChild(propsPic);
-            detailProps.appendChild(propsPicContainer);
-            
-            if (Object.keys(props).length === 0){
-                detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
-            } else {
-                const ul = document.createElement('ul');
-                for (const k of Object.keys(props)){
-                    const li = document.createElement('li');
-                    li.textContent = props[k] || ''; 
-                    ul.appendChild(li);
-                }
-                detailProps.appendChild(ul);
-            }
-        } else {
-            propsSection.style.display = 'none';
-        }
-
-        // 8. 手順 (Recipe / Pre-Process) - 3列グリッドで表示
-        detailRecipe.innerHTML = '';
-        const rec = item.recipe || [];
-        
-        if (!Array.isArray(rec) || rec.length === 0){
-            detailRecipe.appendChild(elText('div','(手順なし)','muted'));
-        } else {
-            const gridContainer = document.createElement('div');
-            gridContainer.className = 'recipe-steps-grid'; 
-
-            for (let i = 0; i < rec.length; i++){
-                const step = rec[i];
-                const stepNo = i + 1;
-                
-                const card = document.createElement('div');
-                card.className = 'recipe-step-card';
-
-                // 1. 手順画像
-                const stepPicIndex = i + 1; 
-                const stepPicSrc = pictures[stepPicIndex];
-
-                if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
-                    const picContainer = document.createElement('div');
-                    picContainer.className = 'recipe-step-picture';
-                    const stepImg = createPictureElement(stepPicSrc, `手順${stepNo}の画像`, '150px'); 
-                    
-                    if (stepImg) { 
-                        picContainer.appendChild(stepImg);
-                        card.appendChild(picContainer);
-                    }
-                }
-                
-                // 2. 手順テキスト
-                const ol = document.createElement('ol');
-                const li = document.createElement('li');
-                
-                li.setAttribute('data-step', stepNo); 
-                li.textContent = step;
-                
-                ol.appendChild(li);
-                card.appendChild(ol);
-                
-                gridContainer.appendChild(card);
-            }
-            
-            detailRecipe.appendChild(gridContainer);
-        }
-
-        // 9. メモ (Memo)
-        detailMemo.innerHTML = '';
-        const memo = item.memo || [];
-        if (!Array.isArray(memo) || memo.length === 0){
-            detailMemo.appendChild(elText('div','(メモなし)','muted'));
-        } else {
-            const ulm = document.createElement('ul');
-            for (const m of memo){
-                ulm.appendChild(elText('li', m));
-            }
-            detailMemo.appendChild(ulm);
-        }
-    }
-  
-    function applyFiltersAndRender(){
-        // ... (省略) ...
-        const q = (qInput.value || '').trim().toLowerCase();
-        const type = filterType.value;
-        const sortVal = sortBy.value;
-
-        let list = flatList.slice();
-
-        // filter by type
-        if (type !== 'all') list = list.filter(i => i._type === type);
-
-        // search across several fields (強化された部分)
-        if (q){
-            list = list.filter(item => {
-                // 検索対象のフィールドを全て結合
-                const parts = [
-                    item.title, item.flavortxt,
-                    joinIfArray(item['fish-name']),
-                    joinIfArray(item.feature),
-                    joinIfArray(item.season),
-                    item.No,
-                    // 材料のキー名（例: サバ, 味噌）
-                    Object.keys(item.ingredients || {}).join(' '),
-                    // 手順 (recipe)
-                    joinIfArray(item.recipe),
-                    // メモ (memo)
-                    joinIfArray(item.memo),
-                    // 道具 (props, preのみ)
-                    joinIfArray(item.props)
-                ];
-                const hay = parts.filter(Boolean).join(' ').toLowerCase();
-                return hay.includes(q);
-            });
-        }
-
-        // sort
-        const desc = sortVal.startsWith('-');
-        const key = desc ? sortVal.slice(1) : sortVal;
-        list.sort((a,b)=>{
-            // numeric-aware where possible
-            const av = a[key];
-            const bv = b[key];
-            // No の並び替えロジックの改善 (P1, P2, 1, 2)
-            if (key === 'No'){
-                // "P1" -> 1.5, "1" -> 1 のようにしてPと数字を分離して比較
-                const extractNum = (val) => {
-                    const s = String(val||'');
-                    const isPre = s.startsWith('P');
-                    const num = parseInt(s.replace(/^P/,'') || '0', 10);
-                    // 'P' 付きは .5 で表現して通常の番号より前に来るようにする
-                    return isPre ? num + 0.5 : num;
-                };
-                const na = extractNum(av);
-                const nb = extractNum(bv);
-                return desc ? nb - na : na - nb;
-            }
-            const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
-            const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
-            if (!isFinite(an) || !isFinite(bn)){
-                // fallback string compare
-                return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
-            }
-            return desc ? bn - an : an - bn;
-        });
-
-        renderTable(list);
-        message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
+    } else {
+        propsSection.style.display = 'none';
     }
 
-    // reload button
-    reloadBtn.addEventListener('click', ()=> {
-        loadData();
-    });
+    // 8. 手順 (Recipe / Pre-Process) - 3列グリッドで表示
+    detailRecipe.innerHTML = '';
+    const rec = item.recipe || [];
     
-    // ★★★ リストに戻るボタンのイベントリスナー ★★★
-    backToListBtn.addEventListener('click', ()=> {
-        showList();
-    });
+    if (!Array.isArray(rec) || rec.length === 0){
+        detailRecipe.appendChild(elText('div','(手順なし)','muted'));
+    } else {
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'recipe-steps-grid'; 
 
-    qInput.addEventListener('input', ()=> applyFiltersAndRender());
-    filterType.addEventListener('change', ()=> applyFiltersAndRender());
-    sortBy.addEventListener('change', ()=> applyFiltersAndRender());
+        for (let i = 0; i < rec.length; i++){
+            const step = rec[i];
+            const stepNo = i + 1;
+            
+            const card = document.createElement('div');
+            card.className = 'recipe-step-card';
 
-    // main loader
-    async function loadData(){
-        message.textContent = '読み込み中...';
-        try {
-            const json = await fetchAny(tryPaths);
-            rawData = json;
-            flatList = buildFlatList(json);
-            if (flatList.length === 0){
-                message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
-            } else {
-                message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
+            // 1. 手順画像
+            const stepPicIndex = i + 1; 
+            const stepPicSrc = pictures[stepPicIndex];
+
+            if (stepPicSrc && stepPicSrc !== 'null' && stepPicSrc !== '') {
+                const picContainer = document.createElement('div');
+                picContainer.className = 'recipe-step-picture';
+                const stepImg = createPictureElement(stepPicSrc, `手順${stepNo}の画像`, '150px'); 
+                
+                if (stepImg) { 
+                    picContainer.appendChild(stepImg);
+                    card.appendChild(picContainer);
+                }
             }
-            applyFiltersAndRender();
-            // データロード完了後、初期表示はリスト画面にする
-            showList();
-        } catch (err){
-            console.error(err);
-            message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
-            clearTable();
-            // エラー時は詳細画面は表示しない
-            wrap.classList.remove('detail-view');
+            
+            // 2. 手順テキスト
+            const ol = document.createElement('ol');
+            const li = document.createElement('li');
+            
+            li.setAttribute('data-step', stepNo); 
+            li.textContent = step;
+            
+            ol.appendChild(li);
+            card.appendChild(ol);
+            
+            gridContainer.appendChild(card);
         }
+        
+        detailRecipe.appendChild(gridContainer);
     }
 
-    // initial load
-    loadData();
+    // 9. メモ (Memo)
+    detailMemo.innerHTML = '';
+    const memo = item.memo || [];
+    if (!Array.isArray(memo) || memo.length === 0){
+        detailMemo.appendChild(elText('div','(メモなし)','muted'));
+    } else {
+        const ulm = document.createElement('ul');
+        for (const m of memo){
+            ulm.appendChild(elText('li', m));
+        }
+        detailMemo.appendChild(ulm);
+    }
+}
+  
+function applyFiltersAndRender(){
+    const q = (qInput.value || '').trim().toLowerCase();
+    const type = filterType.value;
+    const sortVal = sortBy.value;
 
-    // Expose for debug on window
-    window._recipesApp = {
-        loadData,
-        getRaw: ()=> rawData,
-        getFlat: ()=> flatList
-    };
+    let list = flatList.slice();
+
+    // filter by type
+    if (type !== 'all') list = list.filter(i => i._type === type);
+
+    // search across several fields (強化された部分)
+    if (q){
+        list = list.filter(item => {
+            // 検索対象のフィールドを全て結合
+            const parts = [
+                item.title, item.flavortxt,
+                joinIfArray(item['fish-name']),
+                joinIfArray(item.feature),
+                joinIfArray(item.season),
+                item.No,
+                // 材料のキー名（例: サバ, 味噌）
+                Object.keys(item.ingredients || {}).join(' '),
+                // 手順 (recipe)
+                joinIfArray(item.recipe),
+                // メモ (memo)
+                joinIfArray(item.memo),
+                // 道具 (props, preのみ)
+                joinIfArray(item.props)
+            ];
+            const hay = parts.filter(Boolean).join(' ').toLowerCase();
+            return hay.includes(q);
+        });
+    }
+
+    // sort
+    const desc = sortVal.startsWith('-');
+    const key = desc ? sortVal.slice(1) : sortVal;
+    list.sort((a,b)=>{
+        // numeric-aware where possible
+        const av = a[key];
+        const bv = b[key];
+        // No の並び替えロジックの改善 (P1, P2, 1, 2)
+        if (key === 'No'){
+            // "P1" -> 1.5, "1" -> 1 のようにしてPと数字を分離して比較
+            const extractNum = (val) => {
+                const s = String(val||'');
+                const isPre = s.startsWith('P');
+                const num = parseInt(s.replace(/^P/,'') || '0', 10);
+                // 'P' 付きは .5 で表現して通常の番号より前に来るようにする
+                return isPre ? num + 0.5 : num;
+            };
+            const na = extractNum(av);
+            const nb = extractNum(bv);
+            return desc ? nb - na : na - nb;
+        }
+        const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
+        const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
+        if (!isFinite(an) || !isFinite(bn)){
+            // fallback string compare
+            return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+        }
+        return desc ? bn - an : an - bn;
+    });
+
+    renderTable(list);
+    message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
+}
+
+// reload button
+reloadBtn.addEventListener('click', ()=> {
+    loadData();
+});
+
+// ★★★ リストに戻るボタンのイベントリスナー ★★★
+backToListBtn.addEventListener('click', ()=> {
+    showList();
+});
+
+qInput.addEventListener('input', ()=> applyFiltersAndRender());
+filterType.addEventListener('change', ()=> applyFiltersAndRender());
+sortBy.addEventListener('change', ()=> applyFiltersAndRender());
+
+// main loader
+async function loadData(){
+    message.textContent = '読み込み中...';
+    try {
+        const json = await fetchAny(tryPaths);
+        rawData = json;
+        flatList = buildFlatList(json);
+        if (flatList.length === 0){
+            message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
+        } else {
+            message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
+        }
+        applyFiltersAndRender();
+        // データロード完了後、初期表示はリスト画面にする
+        showList();
+    } catch (err){
+        console.error(err);
+        message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
+        clearTable();
+        // エラー時は詳細画面は表示しない
+        wrap.classList.remove('detail-view');
+    }
+}
+
+// initial load
+loadData();
+
+// Expose for debug on window
+window._recipesApp = {
+    loadData,
+    getRaw: ()=> rawData,
+    getFlat: ()=> flatList
+};
 })();
 </script>
 </body>
