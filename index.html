@@ -457,8 +457,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 <script>
 /*
- * 修正版: エラー原因となっていた関数の重複やスコープ外の変数使用を解消
- * 期待される機能: JSONデータのロード、リストのフィルタリング・ソート、詳細表示
+ * 修正版: リストの「詳細」ボタンから、下処理への自動リダイレクトロジックを削除。
+ * これにより、レシピの詳細ボタンは必ずレシピ詳細を表示する。
  */
 
 (function(){
@@ -470,7 +470,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     ];
 
     // ★★★ リスト/フィルター関連の要素 ★★★
-    // ※これらのIDがHTML側に存在しない場合、TypeErrorが発生します。
     const wrap = document.getElementById('wrap');
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
@@ -486,7 +485,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const filterCost = document.getElementById('filterCost');
 
     // ★★★ 詳細コンテナの要素 ★★★
-    const detailContainer = document.getElementById('detailContainer');
+    const detailContainer = document.getElementById('detailContainer'); // HTML側にこのIDがない場合、TypeError発生の可能性あり
     const detailTitle = document.getElementById('detailTitle');
     const detailSubtitle = document.getElementById('detailSubtitle');
     const detailImageContainer = document.getElementById('detailImageContainer');
@@ -692,27 +691,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             tdActions.className = 'actions';
 
 
-            // 詳細ボタンの挙動：下処理が設定されていれば、下処理へ直接遷移
+            // 詳細ボタンの挙動：修正済み
             const viewBtn = document.createElement('button');
             viewBtn.textContent = '詳細';
 
+            // ★★★ 修正箇所: リダイレクトロジックを削除し、常に自身の詳細を表示する ★★★
             viewBtn.addEventListener('click', ()=> {
-                // レシピであり、かつ下処理が設定されている場合
-                if (item._type === 'recipe' && item['pre-recipe']) {
-                    const preRecipeNo = String(item['pre-recipe']);
-                    // flatListから対応する下処理アイテムを探す (Noで検索)
-                    const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
-
-                    if (preItem) {
-                        // 下処理が見つかった場合、そちらの詳細画面に遷移
-                        displayDetail(preItem);
-                        return; // 処理を終了
-                    }
-                }
-
-                // それ以外の場合、自分の詳細画面に遷移
                 displayDetail(item);
             });
+            // ★★★ 修正箇所 ここまで ★★★
 
             tdActions.appendChild(viewBtn);
 
@@ -783,7 +770,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
 
-        // ★ 下処理参照の処理 (Noで検索 / なし表示)
+        // ★ 下処理参照の処理 (Noで検索 / なし表示) - このリンクは残し、レシピ詳細画面から下処理への遷移を可能にする
         if (item._type === 'recipe') {
             const preRecipeNo = item['pre-recipe'] ? String(item['pre-recipe']) : null;
 
@@ -797,7 +784,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                     preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); // タイトル優先で表示
                     preBtn.className = 'pill pre-link-pill';
 
-                    preBtn.addEventListener('click', ()=> displayDetail(preItem));
+                    preBtn.addEventListener('click', ()=> displayDetail(preItem)); // ← このボタンで遷移
                     detailMeta.appendChild(preBtn);
                 } else {
                     // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
