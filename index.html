@@ -471,6 +471,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         './recipes.json'
     ];
 
+    // ★★★ リスト/フィルター関連の要素 ★★★
     const wrap = document.getElementById('wrap');
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
@@ -479,13 +480,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const reloadBtn = document.getElementById('reloadBtn');
     const message = document.getElementById('message');
 
-    // ★★★ 新しいフィルター要素の定義 ★★★
-    const filterFish = document.getElementById('filterFish'); 
-    const filterDifficulty = document.getElementById('filterDifficulty');
-    const filterTime = document.getElementById('filterTime');
-    const filterCost = document.getElementById('filterCost');
+    // ★★★ 新しいフィルター要素 ★★★
+    const filterFish = document.getElementById('filterFish'); 
+    const filterDifficulty = document.getElementById('filterDifficulty');
+    const filterTime = document.getElementById('filterTime');
+    const filterCost = document.getElementById('filterCost');
 
-    // 詳細コンテナの要素
+    // ★★★ 詳細コンテナの要素 ★★★
     const detailContainer = document.getElementById('detailContainer');
     const detailTitle = document.getElementById('detailTitle');
     const detailSubtitle = document.getElementById('detailSubtitle');
@@ -494,13 +495,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailIngredients = document.getElementById('detailIngredients');
     const detailRecipe = document.getElementById('detailRecipe');
     const detailMemo = document.getElementById('detailMemo');
-    const backToListBtn = document.getElementById('backToListBtn'); 
+    const backToListBtn = document.getElementById('backToListBtn'); 
     const detailProps = document.getElementById('detailProps');
-    const propsSection = document.getElementById('propsSection'); 
-    
+    const propsSection = document.getElementById('propsSection'); 
+    
     let rawData = null;
     let flatList = []; // merged list with type annotation
     let currentRawPath = null;
+    
+    // ... (ここから後の関数定義が続きます) ...
     
     // ★★★ 画面切り替えのコア関数 ★★★
     function showList(){
