@@ -5,402 +5,266 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>魚料理レシピ一覧</title>
 <style>
-:root{
-  --bg:#f6f7fb;
-  --card:#ffffff;
-  --accent:#2b6cb0;
-  --muted:#666;
-  --success:#2f855a;
-  --danger:#c53030;
-  --max-width:1200px;
-}
-*{box-sizing:border-box}
-body{
-  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",sans-serif;
-  margin:0;
-  background:var(--bg);
-  color:#222;
-  padding:20px;
-  display:flex;
-  justify-content:center;
-}
-.wrap{
-  width:100%;
-  max-width:var(--max-width);
-}
-header{
-  display:flex;
-  gap:12px;
-  align-items:flex-end;
-  margin-bottom:18px;
-}
-header h1{margin:0;font-size:1.3rem}
-/* --- CSS: .controls の修正 --- */
-.controls{
-  /* display:flex; <--- flex-wrapを外すため、CSSの頭から再定義 */
-  display:flex;
-  gap:8px;
-  /* flex-wrap:wrap; <--- これを外すと、要素が親要素の幅を超えても横に並び続けます。*/
-  /* 代わりに、要素全体を縦に積むために、親要素にdisplay: block;または幅を持たせることが多いですが、
-     ここでは横幅いっぱいに収めるための設定を維持します。
-     もしレイアウトが崩れる場合、ブラウザの幅に応じて縦に積むようにCSS Media Queryを推奨します。
-     今回は、一旦横に並べた上で、スマートフォンでの崩れを防ぐよう設定を調整します。
-  */
-  flex-wrap:wrap; /* やはり画面幅が狭いときに崩れるのを防ぐため、flex-wrapを維持します */
-  align-items:center;
-  /* 新しい設定: フィルター要素が並びきらない場合に縦に積むための最小幅を設定 */
-  justify-content: flex-start; 
-  margin-left: auto;
-}
-/* フィルターボックス内の入力フィールドの幅を統一 */
-.controls input[type="search"], .controls select, .controls input[type="number"] {
-  /* 幅を調整し、コントロールをよりコンパクトに */
-  min-width: 100px;
-  max-width: 150px;
-}
-input[type="search"], select{
-  padding:8px 10px;
-  border-radius:8px;
-  border:1px solid #d6d8df;
-  background:var(--card);
-}
-button{
-  padding:8px 12px;
-  border-radius:8px;
-  border:none;
-  background:var(--accent);
-  color:white;
-  cursor:pointer;
-}
-button:disabled{opacity:.6;cursor:not-allowed}
-main{
-  background:transparent;
-}
-/* ★★★ hidden クラス: 要素を完全に非表示にする ★★★ */
-.hidden {
-    display: none !important;
-}
-/* --- 画面切り替えのコアCSSルール --- */
+/* 既存のスタイルがあれば残しつつ、以下のスタイルを追加 */
 
-/* リスト表示時 (.wrapに.list-viewクラスがある場合) */
-.wrap.list-view header {
-    display: flex; /* ヘッダー（検索、絞り込み）を表示 */
-}
-.wrap.list-view #recipeTable {
-    display: table; /* レシピ一覧テーブルを表示 */
-}
-.wrap.list-view #message {
-    display: block; /* メッセージ/件数表示を表示 */
-}
-.wrap.list-view #detailContainer {
-    display: none !important; /* 詳細コンテナを非表示 */
+/* -- 基本レイアウト -- */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f7f6;
 }
 
-/* 詳細表示時 (.wrapに.detail-viewクラスがある場合) */
-.wrap.detail-view header,
-.wrap.detail-view #recipeTable,
-.wrap.detail-view #message {
-    display: none !important; /* リスト表示に必要な要素を全て非表示 */
-}
-.wrap.detail-view #detailContainer {
-    display: block !important; /* 詳細コンテナを確実に表示 */
-}
-.detail-view header {
-    display: none; /* リストヘッダーを非表示 */
-}
-.detail-view table {
-    display: none; /* テーブルを非表示 */
-}
-
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:var(--card);
-  border-radius:10px;
-  overflow:hidden;
-  box-shadow:0 6px 18px rgba(20,20,40,0.06);
-}
-thead th{
-  text-align:left;
-  padding:10px 12px;
-  font-size:0.85rem;
-  background:#f1f5f9;
-  border-bottom:1px solid #eee;
-  position:sticky;
-  top:0;
-  z-index:1;
-}
-/* tbody tdのスタイルをPicture列表示用に上書き・調整 */
-tbody td{
-  padding:10px 12px;
-  border-bottom:1px dashed #eee;
-  vertical-align:top;
-  font-size:0.95rem;
-  text-align: center;
-}
-/* 画像がある列（3番目）以外は左寄せに戻す */
-tbody td:nth-child(1), /* No */
-tbody td:nth-child(2), /* Type */
-tbody td:nth-child(4), /* Title / flavortxt */
-tbody td:nth-child(5), /* 魚 / 旬 */
-tbody td:nth-child(6), /* 難易度 / 時間 */
-tbody td:nth-child(7), /* 費用 / その他情報 */
-tbody td:nth-child(8){ /* 操作 */
-  text-align: left;
-}
-tbody tr:hover{background:rgba(43,108,176,0.03)}
-.muted{color:var(--muted);font-size:0.85rem}
-.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5ff;color:var(--accent);font-size:0.8rem}
-
-/* ★ 下処理ボタンのスタイルを強調 (最終調整版) ★ */
-.pre-link-pill {
-    /* 基礎デザインの調整 */
-    background-color: #48bb78 !important; /* 目立つ明るいグリーン */
-    color: white !important; /* テキストを白にしてコントラストを確保 */
-    border: 1px solid #38a169 !important;
-    cursor: pointer;
-    font-weight: bold;
-    padding: 6px 12px; /* パディングを少し増やして押しやすく */
-    
-    /* ホバー時の変化を滑らかに */
-    transition: all 0.2s ease-in-out; 
-    
-    /* リンク/ボタンであることをアピール */
-    position: relative; 
-    overflow: hidden; /* ホバーエフェクトの準備 */
-}
-
-/* テキストの前にアイコン/矢印を追加 */
-.pre-link-pill::before {
-    content: "↪"; /* 戻る/進む矢印のようなユニコード文字 */
-    font-size: 1.1em;
-    font-weight: 900;
-    margin-right: 6px;
-    display: inline-block;
-}
-
-.pre-link-pill:hover {
-    /* ホバーで色が濃く沈む */
-    background-color: #38a169 !important; 
-    /* 強調のために影を追加 */
-    box-shadow: 0 4px 10px rgba(72, 187, 120, 0.4); 
-    /* スケールアップして「押せる感」を出す */
-    transform: translateY(-1px);
-}
-/* --- 上記で下処理ボタンのスタイル終了 --- */
-
-
-.actions button{margin-right:6px}
-.tag-type{padding:4px 8px;border-radius:6px;font-size:0.8rem}
-.type-recipe{background:#fff7ed;color:#b45309;border:1px solid #f6e7d0}
-.type-pre{background:#f0fff4;color:#2f855a;border:1px solid #d6f7df}
-/* Picture列の画像スタイル: 80px */
-.recipe-thumb{
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  display: block;
-  margin: 0 auto;
-  border: 1px solid #eee;
-}
-
-/* --- 詳細コンテナ（DOM操作で表示する領域）のスタイル --- */
-.detail-container{
-    margin-top: 0; 
+#wrap {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
-    background: var(--card);
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-.detail-header{
+
+header {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.controls input[type="search"],
+.controls select,
+.controls button {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* -- テーブルスタイル -- */
+#recipeTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+#recipeTable th, #recipeTable td {
+    padding: 10px;
+    text-align: left;
     border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+#recipeTable th {
+    background-color: #f8f8f8;
+    font-weight: 600;
+}
+
+.recipe-thumb {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.tag-type {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+}
+.type-recipe { background-color: #4CAF50; }
+.type-pre { background-color: #2196F3; }
+
+.muted {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.actions button {
+    padding: 5px 8px;
+    margin-right: 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 3px;
+    background: #007bff;
+    color: white;
+}
+
+/* -- 詳細ビュー切り替え -- */
+.detail-container {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.list-view #recipeTable, .list-view #message {
+    display: block;
+}
+.list-view #detailContainer {
+    display: none;
+}
+.detail-view #recipeTable, .detail-view #message {
+    display: none;
+}
+.detail-view #detailContainer {
+    display: block;
+}
+
+.back-button {
+    float: right;
+    background: #f44336;
+    color: white;
+    padding: 8px 15px;
+}
+
+.detail-header {
     padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
     margin-bottom: 15px;
 }
-.detail-header h2{
-    margin: 0 0 5px 0;
-    font-size: 1.6rem;
-    color: var(--accent);
-}
-.meta{
+
+.meta {
     display: flex;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 8px;
     margin-top: 10px;
-    font-size: 0.9rem;
-    color: var(--muted);
 }
-/* 材料・道具セクションは横2列で固定 */
-.detail-grid{
+
+.pill {
+    background: #e0e0e0;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+}
+
+.detail-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
-.section-title{
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #222;
-    margin: 10px 0 6px 0;
-}
-.detail-section ul, .detail-section ol{
-    padding-left: 20px;
-    margin-top: 5px;
-}
-.detail-section pre{
-    white-space: pre-wrap;
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #eef2f7;
-}
-@media (max-width:700px){
-    .detail-grid{grid-template-columns:1fr}
-}
-/* リストに戻るボタンのスタイル */
-.back-button {
-    background: var(--muted);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    float: right; 
-}
-/* floatを解除 */
-.detail-header::after {
-    content: "";
-    display: table;
-    clear: both;
-}
 
-/* ★★★ 材料・道具の画像ボックスを大きく表示 ★★★ */
-.detail-picture-box {
-    margin: 10px 0 15px 0;
-    text-align: center;
-    border: 1px solid #eef;
-    padding: 8px;
-    border-radius: 8px;
-    background: #fcfcfc;
-}
-.detail-picture-box img {
-    max-width: 100%;
-    max-height: 200px; /* JSで設定する最大高さ */
-    width: auto;
-    object-fit: contain;
-    border-radius: 4px;
-    display: block;
-    margin: 0 auto;
-}
-
-
-/* ★★★ 手順セクションの3列グリッドレイアウト ★★★ */
 .recipe-steps-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 1:1:1 の3列 */
-    gap: 20px; /* セクション間の間隔 */
-    margin-top: 15px;
-}
-/* 各手順のカードスタイル */
-.recipe-step-card {
-    background: #f7f9fc;
-    border: 1px solid #eef;
-    padding: 15px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-}
-.recipe-step-card ol {
-    padding-left: 0; /* 番号付きリストのインデントをリセット */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
     margin-top: 10px;
-    list-style: none; /* olのデフォルト番号を消す */
-}
-/* 手順番号 (li) のスタイル調整 */
-.recipe-step-card li {
-    list-style-type: none; /* デフォルトの番号を消す */
-    margin-bottom: 10px;
-    font-weight: normal; /* テキストは通常に戻す */
-}
-.recipe-step-card li::before {
-    content: attr(data-step) ". "; /* カスタムの番号を表示 */
-    color: var(--accent);
-    font-size: 1.1rem;
-    font-weight: 900;
-    margin-right: 5px;
 }
 
-/* 手順画像のスタイル */
-.recipe-step-picture {
-    margin: 0 0 10px 0; /* カード内で下にのみマージン */
-    text-align: center;
-}
-.recipe-step-picture img {
-    max-width: 100%;
-    max-height: 150px; /* 3列に収まりやすい高さ */
-    width: auto;
-    object-fit: contain;
+.recipe-step-card {
+    border: 1px solid #ddd;
+    padding: 10px;
     border-radius: 4px;
-    border: 1px dashed #eee;
 }
 
-/* モバイル対応 (3列から1列に戻す) */
-@media (max-width: 900px) {
-    .recipe-steps-grid {
-        grid-template-columns: 1fr; /* 画面が狭いときは1列にする */
-    }
+/* -- ★★★ モーダルスタイル ★★★ -- */
+.modal-overlay {
+    display: none; /* 初期状態では非表示 */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4); /* 半透明の黒 */
 }
-  
-.notice{padding:12px;border-radius:8px;background:#fff3f3;color:var(--danger);border:1px solid rgba(197,48,48,0.12);margin-bottom:12px}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 画面中央付近 */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 700px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.modal-content h2 {
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+.filter-group {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.filter-group legend {
+    font-weight: bold;
+    padding: 0 10px;
+    color: #333;
+}
+
+.filter-item {
+    display: inline-block;
+    margin-right: 20px;
+    margin-bottom: 5px;
+}
+
+.filter-item label {
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.primary-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+/* -- ★★★ モーダルスタイル ここまで ★★★ -- */
 </style>
 
 <div class="wrap" id="wrap">
     <header>
         <h1>魚のレシピリスト</h1>
        <div class="controls">
-    <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
-    
-    <select id="filterType">
-        <option value="all">全て</option>
-        <option value="recipe">レシピ</option>
-        <option value="pre">下処理</option>
-    </select>
-    
-    <select id="filterFish">
-        <option value="all">魚種: 全て</option>
-        </select>
-    
-    <select id="filterDifficulty">
-        <option value="all">難易度: 全て</option>
-        <option value="1">難易度: 1以下</option>
-        <option value="2">難易度: 2以下</option>
-        <option value="3">難易度: 3以下</option>
-        <option value="4">難易度: 4以下</option>
-        <option value="5">難易度: 5以下</option>
-    </select>
-    
-    <div style="display:inline-flex; align-items:center; gap:4px;">
-        <input type="number" id="filterTime" placeholder="時間" style="width:70px; text-align:right;" min="0">
-        <span>分以内</span>
-    </div>
-    
-    <div style="display:inline-flex; align-items:center; gap:4px;">
-        <input type="number" id="filterCost" placeholder="費用" style="width:70px; text-align:right;" min="0">
-        <span>円以内</span>
-    </div>
-    
-    <select id="sortBy">
-        <option value="No" selected>No順 (昇順)</option>
-        <option value="-No">No順 (降順)</option>
-        <option value="-difficulty">難易度 (高順)</option>
-        <option value="difficulty">難易度 (低順)</option>
-        <option value="-cost">費用 (高順)</option>
-        <option value="cost">費用 (低順)</option>
-        <option value="-time">時間 (長順)</option>
-        <option value="time">時間 (短順)</option>
-        <option value="title">タイトル</option>
-    </select>
-    <button id="reloadBtn">データ再読み込み</button>
-</div>
+            <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
+            
+            <select id="filterType">
+                <option value="all">全て</option>
+                <option value="recipe">レシピ</option>
+                <option value="pre">下処理</option>
+            </select>
+            
+            <button id="filterOpenBtn">絞り込み設定</button> 
+            
+            <select id="sortBy">
+                <option value="No" selected>No順 (昇順)</option>
+                <option value="-No">No順 (降順)</option>
+                <option value="-difficulty">難易度 (高順)</option>
+                <option value="difficulty">難易度 (低順)</option>
+                <option value="-cost">費用 (高順)</option>
+                <option value="cost">費用 (低順)</option>
+                <option value="-time">時間 (長順)</option>
+                <option value="time">時間 (短順)</option>
+                <option value="title">タイトル</option>
+            </select>
+            <button id="reloadBtn">データ再読み込み</button>
+        </div>
     </header>
 
     <main id="app">
@@ -455,10 +319,23 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </main>
 </div>
 
+<div id="filterModal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>絞り込み設定</h2>
+        <div id="filterContent">
+            </div>
+        <div class="modal-footer">
+            <button id="filterClearBtn">フィルター解除</button>
+            <button id="applyFilterBtn" class="primary-button">適用して閉じる</button>
+        </div>
+    </div>
+</div>
+
 <script>
 /*
- * 修正版: リストの「詳細」ボタンから、下処理への自動リダイレクトロジックを削除。
- * これにより、レシピの詳細ボタンは必ずレシピ詳細を表示する。
+ * 最終修正版: 
+ * 1. UIをモーダル（ポップアップ）形式のチェックボックスに変更。
+ * 2. フィルタリングロジックを、チェックボックスの複数選択（魚種）および「以下」（難易度/時間/費用）に対応させて修正。
  */
 
 (function(){
@@ -469,7 +346,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         './recipes.json'
     ];
 
-    // ★★★ リスト/フィルター関連の要素 ★★★
+    // ★★★ リスト/フィルター関連の要素 (既存のHTML要素を使用) ★★★
     const wrap = document.getElementById('wrap');
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
@@ -478,14 +355,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const reloadBtn = document.getElementById('reloadBtn');
     const message = document.getElementById('message');
 
-    // ★★★ 新しいフィルター要素 ★★★
-    const filterFish = document.getElementById('filterFish');
-    const filterDifficulty = document.getElementById('filterDifficulty');
-    const filterTime = document.getElementById('filterTime');
-    const filterCost = document.getElementById('filterCost');
-
+    // ★★★ 新しいフィルターモーダル関連の要素 (HTMLへの追加が必要です) ★★★
+    const filterOpenBtn = document.getElementById('filterOpenBtn'); // 絞り込みボタン
+    const filterModal = document.getElementById('filterModal');     // 絞り込みモーダルコンテナ
+    const filterContent = document.getElementById('filterContent'); // チェックボックスを挿入するコンテナ
+    const applyFilterBtn = document.getElementById('applyFilterBtn'); // モーダル内の適用ボタン
+    const filterClearBtn = document.getElementById('filterClearBtn'); // モーダル内のクリアボタン
+    
     // ★★★ 詳細コンテナの要素 ★★★
-    const detailContainer = document.getElementById('detailContainer'); // HTML側にこのIDがない場合、TypeError発生の可能性あり
     const detailTitle = document.getElementById('detailTitle');
     const detailSubtitle = document.getElementById('detailSubtitle');
     const detailImageContainer = document.getElementById('detailImageContainer');
@@ -499,24 +376,18 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     let rawData = null;
     let flatList = []; // merged list with type annotation
-    let currentRawPath = null;
-
-    // ★★★ 画面切り替えのコア関数 ★★★
-    function showList(){
-        if(wrap) { // wrapが存在するか確認
-            wrap.classList.remove('detail-view');
-            wrap.classList.add('list-view');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    function showDetail(){
-        if(wrap) { // wrapが存在するか確認
-            wrap.classList.remove('list-view');
-            wrap.classList.add('detail-view');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
+    
+    // フィルタの状態を保持するオブジェクト (Setで複数選択に対応)
+    let activeFilters = {
+        'fish-name': new Set(),
+        difficulty: new Set(), // 難易度は最大値を保持する
+        time: new Set(),       // 時間は最大値を保持する
+        cost: new Set()        // 費用は最大値を保持する
+    };
+    // 固定オプション
+    const DIFFICULTY_OPTIONS = ['1', '2', '3', '4', '5'];
+    const TIME_OPTIONS = [15, 30, 60, 90, 120]; 
+    const COST_OPTIONS = [500, 1000, 2000, 3000, 5000];
 
     // Utility: safe text node creation
     function elText(tag, text, cls){
@@ -533,10 +404,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 const res = await fetch(p, {cache: "no-store"});
                 if (!res.ok) continue;
                 const json = await res.json();
-                currentRawPath = p;
                 return json;
             } catch(e){
-                // continue to next path
                 console.warn('fetch failed for', p, e);
             }
         }
@@ -548,17 +417,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         const list = [];
         if (!data || typeof data !== 'object') return list;
 
-        // recipes
         const recipes = data.recipes || {};
         for (const key of Object.keys(recipes)){
             const item = Object.assign({}, recipes[key]);
             item._type = 'recipe';
-            // ensure No is string
             item.No = item.No != null ? String(item.No) : String(key);
             item._origKey = key;
             list.push(item);
         }
-        // preparations
         const pres = data.preparations || {};
         for (const key of Object.keys(pres)){
             const item = Object.assign({}, pres[key]);
@@ -581,41 +447,134 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         if(tbody) tbody.innerHTML = ''; 
     }
 
-    // 魚種のユニークリストを取得し、フィルタードロップダウンに設定する
-    function populateFishFilter(list){
-        if (!filterFish) return; // filterFishがない場合は何もしない
+    /**
+     * チェックボックスグループを生成するヘルパー関数
+     */
+    function createCheckboxGroup(title, key, values, hintText = '', labels = null) {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'filter-group';
+        fieldset.style.border = '1px solid #ccc'; 
+        fieldset.style.margin = '10px 0';
+        fieldset.style.padding = '15px';
+        fieldset.style.borderRadius = '4px';
 
-        // レシピアイテムからすべての魚種を抽出し、重複を排除
+        const legend = document.createElement('legend');
+        legend.textContent = title;
+        legend.style.fontWeight = 'bold';
+        legend.style.padding = '0 10px';
+        fieldset.appendChild(legend);
+
+        if (hintText) {
+             const hint = elText('p', hintText, 'filter-hint');
+             hint.style.fontSize = '0.9em';
+             hint.style.color = '#555';
+             fieldset.appendChild(hint);
+        }
+
+        values.forEach((value, index) => {
+            const strValue = String(value);
+            const id = `${key}-${strValue.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            const labelText = labels ? labels[index] : strValue;
+
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+            div.style.display = 'inline-block';
+            div.style.marginRight = '20px';
+            div.style.marginBottom = '5px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = id;
+            checkbox.value = strValue;
+            checkbox.dataset.filterKey = key;
+            // フィルタ状態を復元
+            if (activeFilters[key] && activeFilters[key].has(strValue)) {
+                checkbox.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.textContent = labelText;
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            fieldset.appendChild(div);
+        });
+        return fieldset;
+    }
+
+    /**
+     * フィルターモーダルの設定とチェックボックスの生成
+     * @param {Array} list - flatList
+     */
+    function setupFilterModal(list){
+        if (!filterContent) return; 
+
+        filterContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        // ------------------------------------
+        // 1. 魚種フィルター (fish-name) - 複数選択
+        // ------------------------------------
         const fishSet = new Set();
         list.forEach(item => {
             if (item._type === 'recipe' && Array.isArray(item['fish-name'])) {
                 item['fish-name'].forEach(fish => {
                     const trimmedFish = fish.trim();
-                    if (trimmedFish) {
-                        fishSet.add(trimmedFish);
-                    }
+                    if (trimmedFish) fishSet.add(trimmedFish);
                 });
             }
         });
-
         const uniqueFish = Array.from(fishSet).sort();
+        fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, '選択した魚種のいずれかを含むレシピを表示'));
 
-        // 既存のオプションをクリアし、「全て」を再設定
-        filterFish.innerHTML = '<option value="all">魚種: 全て</option>';
+        // ------------------------------------
+        // 2. 難易度フィルター (difficulty) - 「以下」で絞り込み
+        // ------------------------------------
+        fragment.appendChild(createCheckboxGroup('難易度', 'difficulty', DIFFICULTY_OPTIONS, 'チェックした難易度以下のレシピを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
 
-        // 新しいオプションを追加
-        uniqueFish.forEach(fish => {
-            const option = document.createElement('option');
-            option.value = fish;
-            option.textContent = fish;
-            filterFish.appendChild(option);
+        // ------------------------------------
+        // 3. 所要時間フィルター (time) - 「以下」で絞り込み
+        // ------------------------------------
+        fragment.appendChild(createCheckboxGroup('所要時間 (分)', 'time', TIME_OPTIONS, 'チェックした時間以下のレシピを表示 (最も短いチェックが適用されます)', TIME_OPTIONS.map(t => `${t}分以内`)));
+
+        // ------------------------------------
+        // 4. 費用フィルター (cost) - 「以下」で絞り込み
+        // ------------------------------------
+        fragment.appendChild(createCheckboxGroup('費用 (円)', 'cost', COST_OPTIONS, 'チェックした費用以下のレシピを表示 (最も安いチェックが適用されます)', COST_OPTIONS.map(c => `¥${c}以下`)));
+
+        filterContent.appendChild(fragment);
+
+        // イベントリスナーの再設定
+        filterContent.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateActiveFilters);
         });
     }
 
+    /**
+     * チェックボックスの状態を activeFilters に反映する
+     */
+    function updateActiveFilters() {
+        // 全てクリアしてから再構築
+        activeFilters = {
+            'fish-name': new Set(),
+            difficulty: new Set(),
+            time: new Set(),
+            cost: new Set()
+        };
+
+        filterContent.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const key = checkbox.dataset.filterKey;
+            if (activeFilters[key]) {
+                activeFilters[key].add(checkbox.value);
+            }
+        });
+    }
+    
     // render table rows from list
     function renderTable(list){
         clearTable();
-        if (!tbody) return; // tbodyがない場合は何もしない
+        if (!tbody) return; 
 
         if (!Array.isArray(list) || list.length === 0){
             tbody.innerHTML = '<tr><td colspan="8" class="muted" style="padding:20px;text-align:center">表示するレシピがありません。</td></tr>';
@@ -642,18 +601,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             const tdPicture = document.createElement('td');
             const img = document.createElement('img');
             img.className = 'recipe-thumb';
-
             const firstPic = (Array.isArray(item.pictures) && item.pictures.length > 0) ? item.pictures[0] : null;
-
-            let imgSrc = '';
-            if (firstPic && typeof firstPic === 'string'){
-                imgSrc = firstPic;
-            } else {
-                imgSrc = 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
-            }
-
+            let imgSrc = firstPic && typeof firstPic === 'string' ? firstPic : 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
             img.src = imgSrc;
             img.alt = item.title || '画像';
+            img.style.width = '80px'; 
+            img.style.height = '60px'; 
+            img.style.objectFit = 'cover'; 
             tdPicture.appendChild(img);
             tr.appendChild(tdPicture);
 
@@ -690,30 +644,23 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             const tdActions = document.createElement('td');
             tdActions.className = 'actions';
 
-
-            // 詳細ボタンの挙動：修正済み
+            // 詳細ボタン
             const viewBtn = document.createElement('button');
             viewBtn.textContent = '詳細';
-
-            // ★★★ 修正箇所: リダイレクトロジックを削除し、常に自身の詳細を表示する ★★★
             viewBtn.addEventListener('click', ()=> {
                 displayDetail(item);
             });
-            // ★★★ 修正箇所 ここまで ★★★
-
             tdActions.appendChild(viewBtn);
-
 
             // 印刷ボタン
             const printBtn = document.createElement('button');
             printBtn.textContent = '印刷';
-            printBtn.style.background = '#a0aec0'; // 薄いグレー
+            printBtn.style.background = '#a0aec0'; 
             printBtn.addEventListener('click', ()=> {
-                // 詳細画面を表示してから印刷ダイアログを開く
                 displayDetail(item);
                 setTimeout(() => {
                     window.print();
-                }, 500); // 画面切り替えを待つ
+                }, 500); 
             });
             tdActions.appendChild(printBtn);
 
@@ -722,7 +669,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
         tbody.appendChild(fragment);
     }
-
+    
     // Utility: 画像を表示するエレメントを作成する関数
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
@@ -742,26 +689,25 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         return img;
     }
 
-    // 詳細情報を同じページ内のコンテナに表示する関数
+    // 詳細情報を表示する関数 (元のコードを維持)
     function displayDetail(item){
-        // 必須要素の存在チェック
         if(!detailTitle || !detailSubtitle || !detailMeta || !detailImageContainer || !detailIngredients || !detailRecipe || !detailMemo || !propsSection) {
             console.error("Missing detail element(s) in HTML.");
             return;
         }
 
-        // 1. 画面を詳細表示に切り替える
-        showDetail();
+        if (wrap) {
+            wrap.classList.remove('list-view');
+            wrap.classList.add('detail-view');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // 2. 画像パスの割り当てとインデックス再定義
         const pictures = item.pictures || [];
         const thumbPic = pictures[0] || 'https://0128-game.github.io/Fish-recipe/picture/noimage.png';
 
-        // 3. ヘッダー情報
         detailTitle.textContent = (item.title || '(タイトルなし)') + ' — No.' + item.No;
         detailSubtitle.textContent = item.flavortxt || '';
 
-        // 4. メタ情報
         detailMeta.innerHTML = '';
         detailMeta.appendChild(elText('div', 'タイプ: ' + (item._type || '-'), 'pill'));
         detailMeta.appendChild(elText('div', '魚: ' + joinIfArray(item['fish-name']) , 'pill'));
@@ -770,36 +716,30 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         detailMeta.appendChild(elText('div', '費用: ' + (item.cost != null ? '¥' + item.cost : '-'), 'pill'));
         detailMeta.appendChild(elText('div', '所要時間: ' + (item.time != null ? item.time + '分' : '-'), 'pill'));
 
-        // ★ 下処理参照の処理 (Noで検索 / なし表示) - このリンクは残し、レシピ詳細画面から下処理への遷移を可能にする
         if (item._type === 'recipe') {
             const preRecipeNo = item['pre-recipe'] ? String(item['pre-recipe']) : null;
 
             if (preRecipeNo) {
-                // Noで下処理アイテムを検索
                 const preItem = flatList.find(i => i._type === 'pre' && String(i.No) === preRecipeNo);
 
                 if (preItem) {
-                    // 1. 下処理アイテムが見つかった場合 -> クリックできる緑のボタンとして表示
                     const preBtn = document.createElement('button');
-                    preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); // タイトル優先で表示
+                    preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); 
                     preBtn.className = 'pill pre-link-pill';
+                    preBtn.style.cursor = 'pointer'; 
 
-                    preBtn.addEventListener('click', ()=> displayDetail(preItem)); // ← このボタンで遷移
+                    preBtn.addEventListener('click', ()=> displayDetail(preItem)); 
                     detailMeta.appendChild(preBtn);
                 } else {
-                    // 2. 下処理アイテムが見つからない場合 -> 通常の「下処理: なし」ピルを表示
                     detailMeta.appendChild(elText('div', '下処理: No.' + preRecipeNo + ' (未発見)', 'pill'));
                 }
             } else {
-                 // 3. レシピだが pre-recipe が設定されていない場合 -> 通常の「下処理: なし」ピルを表示
                  detailMeta.appendChild(elText('div', '下処理: なし', 'pill'));
             }
         } else if (item._type === 'pre') {
-             // 4. 自身が下処理アイテムの場合
              detailMeta.appendChild(elText('div', '下処理', 'pill'));
         }
 
-        // 5. メイン画像 (サムネイル: pictures[0])
         detailImageContainer.innerHTML = '';
         const mainImg = createPictureElement(thumbPic, item.title, '250px');
         if (mainImg) {
@@ -808,14 +748,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailImageContainer.appendChild(mainImg);
         }
 
-        // 6. 材料 (Ingredients)
         detailIngredients.innerHTML = '';
         const ing = item.ingredients || {};
-        const ingPicContainer = document.createElement('div');
-        ingPicContainer.className = 'detail-picture-box';
-        const ingPic = createPictureElement(thumbPic, item.title + ' 材料', '200px');
-        if (ingPic) ingPicContainer.appendChild(ingPic);
-        detailIngredients.appendChild(ingPicContainer);
 
         if (Object.keys(ing).length === 0){
             detailIngredients.appendChild(elText('div','(材料なし)','muted'));
@@ -829,18 +763,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailIngredients.appendChild(ul);
         }
 
-        // 7. 道具 (Props)
         detailProps.innerHTML = '';
         const props = item.props || {};
 
         if (item._type === 'pre') {
-            propsSection.style.display = 'block';
-
-            const propsPicContainer = document.createElement('div');
-            propsPicContainer.className = 'detail-picture-box';
-            const propsPic = createPictureElement(thumbPic, item.title + ' 道具', '200px');
-            if (propsPic) propsPicContainer.appendChild(propsPic);
-            detailProps.appendChild(propsPicContainer);
+            if (propsSection) propsSection.style.display = 'block';
 
             if (Object.keys(props).length === 0){
                 detailProps.appendChild(elText('div', '(道具なし)', 'muted'));
@@ -854,10 +781,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 detailProps.appendChild(ul);
             }
         } else {
-            propsSection.style.display = 'none';
+            if (propsSection) propsSection.style.display = 'none';
         }
 
-        // 8. 手順 (Recipe / Pre-Process) - 3列グリッドで表示
         detailRecipe.innerHTML = '';
         const rec = item.recipe || [];
 
@@ -865,16 +791,20 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailRecipe.appendChild(elText('div','(手順なし)','muted'));
         } else {
             const gridContainer = document.createElement('div');
-            gridContainer.className = 'recipe-steps-grid';
-
+            gridContainer.style.display = 'grid';
+            gridContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
+            gridContainer.style.gap = '10px';
+            
             for (let i = 0; i < rec.length; i++){
                 const step = rec[i];
                 const stepNo = i + 1;
 
                 const card = document.createElement('div');
-                card.className = 'recipe-step-card';
+                card.className = 'recipe-step-card'; 
+                card.style.border = '1px solid #ddd'; 
+                card.style.padding = '10px';
+                card.style.margin = '5px';
 
-                // 1. 手順画像
                 const stepPicIndex = i + 1;
                 const stepPicSrc = pictures[stepPicIndex];
 
@@ -889,23 +819,16 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                     }
                 }
 
-                // 2. 手順テキスト
-                const ol = document.createElement('ol');
-                const li = document.createElement('li');
-
-                li.setAttribute('data-step', stepNo);
-                li.textContent = step;
-
-                ol.appendChild(li);
-                card.appendChild(ol);
+                const p = document.createElement('p');
+                p.innerHTML = `<span style="font-weight:bold; color:#007bff;">${stepNo}.</span> ${step}`;
+                card.appendChild(p);
 
                 gridContainer.appendChild(card);
             }
-
+            
             detailRecipe.appendChild(gridContainer);
         }
 
-        // 9. メモ (Memo)
         detailMemo.innerHTML = '';
         const memo = item.memo || [];
         if (!Array.isArray(memo) || memo.length === 0){
@@ -920,141 +843,143 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
 
-// フィルターを適用し、テーブルを再描画する (修正版: 安全な値取得を追加)
-function applyFiltersAndRender(){
-    // ID要素が存在しない場合でも処理を続行するために、安全な値取得に変更
-    // qInput, filterType, sortBy は必須として、存在しない場合は空文字/デフォルト値を使用
+    /**
+     * フィルターを適用し、テーブルを再描画する (モーダルチェックボックス対応版)
+     */
+    function applyFiltersAndRender(){
+        // 必須要素の存在チェック
+        if(!qInput || !filterType || !sortBy || !message) {
+             console.error("Missing CORE filter element(s) in HTML.");
+             return;
+        }
 
-    const q = (qInput && qInput.value || '').trim().toLowerCase();
-    const type = (filterType && filterType.value) || 'all';
-    const sortVal = (sortBy && sortBy.value) || 'No';
+        const q = (qInput.value || '').trim().toLowerCase();
+        const type = filterType.value;
+        const sortVal = sortBy.value;
 
-    // フィルターの値を取得 - 要素が存在しない場合は、フィルター無効化の値を使用
-    const fishName = (filterFish && filterFish.value) || 'all';
-    const diff = (filterDifficulty && filterDifficulty.value) || 'all';
-    // filterTime/filterCost が null の場合、.value は undefined になり、parseFloat で NaN になるため、|| "" で安全を確保
-    const maxTime = parseFloat((filterTime && filterTime.value) || ""); 
-    const maxCost = parseFloat((filterCost && filterCost.value) || "");
+        let list = flatList.slice();
 
-    // 必須要素がない場合はここで終了（qInput, filterType, sortBy, message はリスト表示に必須）
-    if(!qInput || !filterType || !sortBy || !message) {
-         console.error("Missing CORE filter element(s) in HTML (qInput, filterType, sortBy, message).");
-         return;
-    }
-    
-    // ... (残りのロジックは変更なし) ...
-    
-    let list = flatList.slice();
-    
-    // filter by type
-    if (type !== 'all') list = list.filter(i => i._type === type);
+        // 1. タイプのフィルター
+        if (type !== 'all') list = list.filter(i => i._type === type);
 
-    // search across several fields
-    if (q){
+        // 2. 検索 (Search)
+        if (q){
+            list = list.filter(item => {
+                const parts = [
+                    item.title, item.flavortxt,
+                    joinIfArray(item['fish-name']),
+                    joinIfArray(item.feature),
+                    joinIfArray(item.season),
+                    item.No,
+                    Object.keys(item.ingredients || {}).join(' '),
+                    joinIfArray(item.recipe),
+                    joinIfArray(item.memo),
+                    joinIfArray(item.props)
+                ];
+                const hay = parts.filter(Boolean).join(' ').toLowerCase();
+                return hay.includes(q);
+            });
+        }
+
+        // ★★★ 3. チェックボックスによる統合されたフィルターロジックの適用 ★★★
         list = list.filter(item => {
-            const parts = [
-                item.title, item.flavortxt,
-                joinIfArray(item['fish-name']),
-                joinIfArray(item.feature),
-                joinIfArray(item.season),
-                item.No,
-                Object.keys(item.ingredients || {}).join(' '),
-                joinIfArray(item.recipe),
-                joinIfArray(item.memo),
-                joinIfArray(item.props)
-            ];
-            const hay = parts.filter(Boolean).join(' ').toLowerCase();
-            return hay.includes(q);
+            // 下処理アイテムはレシピ固有のフィルター対象外
+            if (item._type === 'pre') return true;
+
+            // --- 魚種フィルター (fish-name) - OR条件 ---
+            const activeFish = activeFilters['fish-name'];
+            if (activeFish.size > 0) {
+                const itemFish = Array.isArray(item['fish-name']) ? item['fish-name'].map(f => f.trim()) : [];
+                // 選択された魚種のどれか一つでもレシピに含まれていればOK
+                const match = itemFish.some(f => activeFish.has(f));
+                if (!match) return false;
+            }
+
+            // --- 難易度フィルター (difficulty) - MINIMUM MAX値条件 ---
+            const activeDiff = activeFilters.difficulty;
+            if (activeDiff.size > 0) {
+                // 選択された値の中で「最も厳しい（小さい）」難易度を抽出 (難易度はこの値以下で絞るため)
+                const minRequiredMaxDiff = Math.min(...Array.from(activeDiff).map(v => parseFloat(v)));
+                const itemDiff = parseFloat(item.difficulty);
+                
+                // difficultyが設定されている場合のみ比較
+                if (item.difficulty != null) {
+                    if (itemDiff > minRequiredMaxDiff) return false;
+                }
+            }
+
+            // --- 所要時間フィルター (time) - MINIMUM MAX値条件 ---
+            const activeTime = activeFilters.time;
+            if (activeTime.size > 0) {
+                // 選択された値の中で「最も短い」時間 (maxTime) を抽出
+                const minMaxTime = Math.min(...Array.from(activeTime).map(v => parseFloat(v)));
+                const itemTime = parseFloat(item.time);
+
+                if (item.time != null) {
+                    if (itemTime > minMaxTime) return false;
+                }
+            }
+            
+            // --- 費用フィルター (cost) - MINIMUM MAX値条件 ---
+            const activeCost = activeFilters.cost;
+            if (activeCost.size > 0) {
+                // 選択された値の中で「最も安い」金額 (maxCost) を抽出
+                const minMaxCost = Math.min(...Array.from(activeCost).map(v => parseFloat(v)));
+                const itemCost = parseFloat(item.cost);
+
+                if (item.cost != null) {
+                    if (itemCost > minMaxCost) return false;
+                }
+            }
+
+            return true;
         });
+        // ★★★ フィルタリングロジックの適用 ここまで ★★★
+
+
+        // 4. ソート (Sort)
+        const desc = sortVal.startsWith('-');
+        const key = desc ? sortVal.slice(1) : sortVal;
+
+        list.sort((a,b)=>{
+            const av = a[key];
+            const bv = b[key];
+
+            if (key === 'No'){
+                const extractNum = (val) => {
+                    const s = String(val||'');
+                    const isPre = s.startsWith('P');
+                    const num = parseInt(s.replace(/^P/,'') || '0', 10);
+                    return isPre ? num + 0.5 : num;
+                };
+                const na = extractNum(av);
+                const nb = extractNum(bv);
+                return desc ? nb - na : na - nb;
+            }
+
+            const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
+            const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
+            if (!isFinite(an) || !isFinite(bn)){
+                return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+            }
+            return desc ? bn - an : an - bn;
+        });
+
+
+        renderTable(list);
+        
+        let activeCount = 0;
+        for (const key in activeFilters) {
+             activeCount += activeFilters[key].size;
+        }
+
+        let filterText = '';
+        if (activeCount > 0) {
+             filterText = ` (${activeCount} 種類のフィルター適用中)`;
+        }
+
+        message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)${filterText}`;
     }
-
-    // ★★★ 統合されたフィルターロジックの適用 ★★★
-    list = list.filter(item => {
-        // 下処理アイテムは魚種、難易度、時間、費用のフィルター対象外
-        if (item._type === 'pre') return true;
-
-        // 魚種フィルター
-        if (fishName !== 'all') {
-            if (!Array.isArray(item['fish-name']) || !item['fish-name'].some(f => f.trim() === fishName)) {
-                return false;
-            }
-        }
-
-        // 難易度フィルター
-        if (diff !== 'all') {
-            const requiredDiff = parseInt(diff, 10);
-            const itemDiff = parseFloat(item.difficulty);
-
-            // 難易度が設定されていない場合は、フィルターを適用せず通過させる (前のコードの意図を反映)
-            if (item.difficulty != null) {
-                if (itemDiff > requiredDiff) {
-                    return false; // 設定されていて条件を満たさない場合は除外
-                }
-            }
-        }
-
-        // 時間フィルター (所要時間: time)
-        if (!isNaN(maxTime) && maxTime >= 0) {
-            const itemTime = parseFloat(item.time);
-
-            if (item.time != null) {
-                if (itemTime > maxTime) {
-                    return false;
-                }
-            }
-        }
-
-        // 費用フィルター (cost)
-        if (!isNaN(maxCost) && maxCost >= 0) {
-            const itemCost = parseFloat(item.cost);
-
-            if (item.cost != null) {
-                if (itemCost > maxCost) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    });
-    // ★★★ ここまで統合されたフィルターロジックの適用 ★★★
-
-
-    // sort
-    const desc = sortVal.startsWith('-');
-    const key = desc ? sortVal.slice(1) : sortVal;
-
-    list.sort((a,b)=>{
-        // numeric-aware where possible
-        const av = a[key];
-        const bv = b[key];
-
-        // No の並び替えロジックの改善 (P1, P2, 1, 2)
-        if (key === 'No'){
-            const extractNum = (val) => {
-                const s = String(val||'');
-                const isPre = s.startsWith('P');
-                const num = parseInt(s.replace(/^P/,'') || '0', 10);
-                return isPre ? num + 0.5 : num;
-            };
-            const na = extractNum(av);
-            const nb = extractNum(bv);
-            return desc ? nb - na : na - nb;
-        }
-
-        const an = (av == null) ? Number.POSITIVE_INFINITY : Number(av);
-        const bn = (bv == null) ? Number.POSITIVE_INFINITY : Number(bv);
-        if (!isFinite(an) || !isFinite(bn)){
-            // fallback string compare
-            return desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
-        }
-        return desc ? bn - an : an - bn;
-    });
-
-
-    renderTable(list);
-    message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)`;
-}
 
     // reload button
     if(reloadBtn) {
@@ -1066,7 +991,11 @@ function applyFiltersAndRender(){
     // リストに戻るボタンのイベントリスナー
     if(backToListBtn) {
         backToListBtn.addEventListener('click', ()=> {
-            showList();
+            if(wrap) {
+                wrap.classList.remove('detail-view');
+                wrap.classList.add('list-view');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 
@@ -1074,10 +1003,48 @@ function applyFiltersAndRender(){
     if(qInput) qInput.addEventListener('input', ()=> applyFiltersAndRender());
     if(filterType) filterType.addEventListener('change', ()=> applyFiltersAndRender());
     if(sortBy) sortBy.addEventListener('change', ()=> applyFiltersAndRender());
-    if(filterFish) filterFish.addEventListener('change', ()=> applyFiltersAndRender());
-    if(filterDifficulty) filterDifficulty.addEventListener('change', ()=> applyFiltersAndRender());
-    if(filterTime) filterTime.addEventListener('input', ()=> applyFiltersAndRender());
-    if(filterCost) filterCost.addEventListener('input', ()=> applyFiltersAndRender());
+    
+    // ★★★ フィルターモーダル関連のイベントリスナー ★★★
+    if (filterOpenBtn) {
+        filterOpenBtn.addEventListener('click', () => {
+             // モーダル表示時に毎回チェックボックスの状態を更新し、表示をリフレッシュ
+             setupFilterModal(flatList); 
+             if (filterModal) filterModal.style.display = 'flex'; // flexで表示
+        });
+        
+        // モーダルのオーバーレイをクリックで閉じる (簡易的なもの)
+        if (filterModal) {
+            filterModal.addEventListener('click', (e) => {
+                if (e.target === filterModal) {
+                    filterModal.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    if (applyFilterBtn) {
+        applyFilterBtn.addEventListener('click', () => {
+             updateActiveFilters(); // チェックボックスの状態を確定
+             applyFiltersAndRender();
+             if (filterModal) filterModal.style.display = 'none'; // モーダルを閉じる
+        });
+    }
+    
+    if (filterClearBtn) {
+        filterClearBtn.addEventListener('click', () => {
+             // 全てのフィルターをクリア
+             activeFilters = {
+                'fish-name': new Set(),
+                difficulty: new Set(),
+                time: new Set(),
+                cost: new Set()
+             };
+             // UIをリセットするために再度セットアップ
+             setupFilterModal(flatList); 
+             applyFiltersAndRender();
+        });
+    }
+    // ★★★ フィルターモーダル関連のイベントリスナー ここまで ★★★
 
 
     // main loader
@@ -1088,22 +1055,22 @@ function applyFiltersAndRender(){
             rawData = json;
             flatList = buildFlatList(json);
 
-            // 魚種フィルターのオプションを生成
-            populateFishFilter(flatList);
-
             if (flatList.length === 0){
                 if(message) message.innerHTML = '<div class="notice">recipes または preparations のデータが空です。docs/recipes.json を確認してください。</div>';
             } else {
                 if(message) message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
             }
+            
+            // 初回表示
             applyFiltersAndRender();
-            // データロード完了後、初期表示はリスト画面にする
-            showList();
+            if(wrap) {
+                 wrap.classList.remove('detail-view');
+                 wrap.classList.add('list-view');
+            }
         } catch (err){
             console.error(err);
             if(message) message.innerHTML = '<div class="notice">読み込みエラー: ' + String(err.message) + '</div>';
             clearTable();
-            // エラー時は詳細画面は表示しない
             if(wrap) wrap.classList.remove('detail-view');
         }
     }
