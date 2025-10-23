@@ -464,9 +464,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 <script>
 /*
- * 最終修正版: 
- * 1. UIをモーダル（ポップアップ）形式のチェックボックスに変更。
- * 2. フィルタリングロジックを、チェックボックスの複数選択（魚種）および「以下」（難易度/時間/費用）に対応させて修正。
+ * 最終修正版: ラジオボタン＋入力欄のハイブリッド絞り込み機能に対応
+ * - 難易度: ラジオボタン
+ * - 時間/費用: ラジオボタン (選択肢) + 入力欄 (最大値)
  */
 
 (function(){
@@ -489,7 +489,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     // ★★★ 新しいフィルターモーダル関連の要素 (HTMLへの追加が必要です) ★★★
     const filterOpenBtn = document.getElementById('filterOpenBtn'); // 絞り込みボタン
     const filterModal = document.getElementById('filterModal');     // 絞り込みモーダルコンテナ
-    const filterContent = document.getElementById('filterContent'); // チェックボックスを挿入するコンテナ
+    const filterContent = document.getElementById('filterContent'); // チェックボックス/ラジオボタンを挿入するコンテナ
     const applyFilterBtn = document.getElementById('applyFilterBtn'); // モーダル内の適用ボタン
     const filterClearBtn = document.getElementById('filterClearBtn'); // モーダル内のクリアボタン
     
@@ -508,17 +508,20 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     let rawData = null;
     let flatList = []; // merged list with type annotation
     
-    // フィルタの状態を保持するオブジェクト (Setで複数選択に対応)
+    // フィルタの状態を保持するオブジェクト (魚種はSet、難易度/時間/費用は単一の値)
     let activeFilters = {
-        'fish-name': new Set(),
-        difficulty: new Set(), // 難易度は最大値を保持する
-        time: new Set(),       // 時間は最大値を保持する
-        cost: new Set()        // 費用は最大値を保持する
+        'fish-name': new Set(), // チェックボックス形式 (複数選択)
+        difficulty: null,       // ラジオボタン形式 (単一値)
+        time: null,             // ラジオボタン/入力形式 (単一値)
+        cost: null              // ラジオボタン/入力形式 (単一値)
     };
     // 固定オプション
     const DIFFICULTY_OPTIONS = ['1', '2', '3', '4', '5'];
-    const TIME_OPTIONS = [15, 30, 60, 90, 120]; 
-    const COST_OPTIONS = [500, 1000, 2000, 3000, 5000];
+    const TIME_OPTIONS = [15, 30, 60]; 
+    const COST_OPTIONS = [500, 1000, 2000];
+    const TIME_MAX = 120; // 入力欄の最大値
+    const COST_MAX = 5000; // 入力欄の最大値
+
 
     // Utility: safe text node creation
     function elText(tag, text, cls){
@@ -579,53 +582,41 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
     /**
-     * チェックボックスグループを生成するヘルパー関数
+     * チェックボックスグループを生成するヘルパー関数 (魚種用)
      */
-    function createCheckboxGroup(title, key, values, hintText = '', labels = null) {
+    function createCheckboxGroup(title, key, values, hintText = '') {
         const fieldset = document.createElement('fieldset');
         fieldset.className = 'filter-group';
-        fieldset.style.border = '1px solid #ccc'; 
-        fieldset.style.margin = '10px 0';
-        fieldset.style.padding = '15px';
-        fieldset.style.borderRadius = '4px';
 
         const legend = document.createElement('legend');
         legend.textContent = title;
-        legend.style.fontWeight = 'bold';
-        legend.style.padding = '0 10px';
         fieldset.appendChild(legend);
 
         if (hintText) {
              const hint = elText('p', hintText, 'filter-hint');
-             hint.style.fontSize = '0.9em';
-             hint.style.color = '#555';
              fieldset.appendChild(hint);
         }
 
-        values.forEach((value, index) => {
+        values.forEach(value => {
             const strValue = String(value);
             const id = `${key}-${strValue.replace(/[^a-zA-Z0-9]/g, '-')}`;
-            const labelText = labels ? labels[index] : strValue;
 
             const div = document.createElement('div');
             div.className = 'filter-item';
-            div.style.display = 'inline-block';
-            div.style.marginRight = '20px';
-            div.style.marginBottom = '5px';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = id;
             checkbox.value = strValue;
             checkbox.dataset.filterKey = key;
-            // フィルタ状態を復元
+            
             if (activeFilters[key] && activeFilters[key].has(strValue)) {
                 checkbox.checked = true;
             }
 
             const label = document.createElement('label');
             label.htmlFor = id;
-            label.textContent = labelText;
+            label.textContent = strValue;
 
             div.appendChild(checkbox);
             div.appendChild(label);
@@ -635,7 +626,125 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
     /**
-     * フィルターモーダルの設定とチェックボックスの生成
+     * ラジオボタングループを生成するヘルパー関数 (難易度/時間/費用用)
+     * @param {string} type - 'radio' or 'radio-input'
+     */
+    function createRadioGroup(title, key, values, hintText = '', labels = null, type = 'radio', inputProps = {}) {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'filter-group';
+
+        const legend = document.createElement('legend');
+        legend.textContent = title;
+        fieldset.appendChild(legend);
+
+        if (hintText) {
+             const hint = elText('p', hintText, 'filter-hint');
+             fieldset.appendChild(hint);
+        }
+        
+        // ----------------- ラジオボタン群 -----------------
+        const radioDiv = document.createElement('div');
+        radioDiv.className = 'radio-options-container';
+
+        // ラジオボタン: 「制限なし」
+        const allRadioDiv = document.createElement('div');
+        allRadioDiv.className = 'filter-item';
+        const allId = `${key}-all`;
+        const allRadio = document.createElement('input');
+        allRadio.type = 'radio';
+        allRadio.id = allId;
+        allRadio.name = key;
+        allRadio.value = ''; // 空文字でフィルター解除を示す
+        allRadio.dataset.filterKey = key;
+        if (activeFilters[key] === null || activeFilters[key] === '') {
+            allRadio.checked = true;
+        }
+        const allLabel = document.createElement('label');
+        allLabel.htmlFor = allId;
+        allLabel.textContent = (key === 'difficulty') ? '制限なし' : '制限なし';
+        allRadioDiv.appendChild(allRadio);
+        allRadioDiv.appendChild(allLabel);
+        radioDiv.appendChild(allRadioDiv);
+
+        // ラジオボタン: 定義済みの値
+        values.forEach((value, index) => {
+            const strValue = String(value);
+            const id = `${key}-${strValue}`;
+            const labelText = labels ? labels[index] : strValue;
+
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.id = id;
+            radio.name = key;
+            radio.value = strValue;
+            radio.dataset.filterKey = key;
+            if (activeFilters[key] === strValue) {
+                radio.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.textContent = labelText;
+
+            div.appendChild(radio);
+            div.appendChild(label);
+            radioDiv.appendChild(div);
+        });
+        fieldset.appendChild(radioDiv);
+
+
+        // ----------------- 入力フィールド (時間と費用のみ) -----------------
+        if (type === 'radio-input') {
+            const inputContainer = document.createElement('div');
+            inputContainer.className = 'filter-input-container';
+            inputContainer.style.marginTop = '10px';
+            inputContainer.style.borderTop = '1px dashed #e2e8f0';
+            inputContainer.style.paddingTop = '10px';
+
+            const inputId = `${key}-custom-input`;
+            const labelText = (key === 'time') ? '分以内' : '円以下';
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.id = inputId;
+            input.name = `${key}-custom`;
+            input.placeholder = `カスタム最大値 (${inputProps.max || '最大値'})`;
+            input.min = inputProps.min || 1;
+            input.max = inputProps.max || 9999;
+            input.style.width = '120px';
+            input.style.padding = '6px 10px';
+            input.style.borderRadius = '6px';
+            input.style.border = '1px solid #d6d8df';
+            input.dataset.filterKey = key;
+            input.dataset.inputType = 'custom';
+
+            // activeFiltersに数字が格納されている場合はラジオボタンではなく入力欄の値を復元
+            if (activeFilters[key] !== null && activeFilters[key] !== '' && !values.map(String).includes(activeFilters[key])) {
+                input.value = activeFilters[key];
+            }
+            
+            // ラベル
+            const label = document.createElement('label');
+            label.htmlFor = inputId;
+            label.textContent = `最大値を手動で入力 (${labelText}): `;
+            label.style.fontWeight = 'normal';
+            label.style.marginRight = '5px';
+
+            inputContainer.appendChild(label);
+            inputContainer.appendChild(input);
+            fieldset.appendChild(inputContainer);
+        }
+
+        // イベントリスナーは setupFilterModal でまとめて設定
+        return fieldset;
+    }
+
+
+    /**
+     * フィルターモーダルの設定とチェックボックス/ラジオボタンの生成
      * @param {Array} list - flatList
      */
     function setupFilterModal(list){
@@ -645,7 +754,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         const fragment = document.createDocumentFragment();
 
         // ------------------------------------
-        // 1. 魚種フィルター (fish-name) - 複数選択
+        // 1. 魚種フィルター (fish-name) - チェックボックス（複数選択）
         // ------------------------------------
         const fishSet = new Set();
         list.forEach(item => {
@@ -660,19 +769,19 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, '選択した魚種のいずれかを含むレシピを表示'));
 
         // ------------------------------------
-        // 2. 難易度フィルター (difficulty) - 「以下」で絞り込み
+        // 2. 難易度フィルター (difficulty) - ラジオボタン（単一選択）
         // ------------------------------------
-        fragment.appendChild(createCheckboxGroup('難易度', 'difficulty', DIFFICULTY_OPTIONS, 'チェックした難易度以下のレシピを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
+        fragment.appendChild(createRadioGroup('難易度 (最大)', 'difficulty', DIFFICULTY_OPTIONS, '選択した難易度以下のレシピを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
 
         // ------------------------------------
-        // 3. 所要時間フィルター (time) - 「以下」で絞り込み
+        // 3. 所要時間フィルター (time) - ラジオボタン＋入力欄（単一最大値）
         // ------------------------------------
-        fragment.appendChild(createCheckboxGroup('所要時間 (分)', 'time', TIME_OPTIONS, 'チェックした時間以下のレシピを表示 (最も短いチェックが適用されます)', TIME_OPTIONS.map(t => `${t}分以内`)));
+        fragment.appendChild(createRadioGroup('所要時間 (分・最大)', 'time', TIME_OPTIONS, '選択肢または入力欄で指定した時間以下のレシピを表示', TIME_OPTIONS.map(t => `${t}分以内`), 'radio-input', {min: 1, max: TIME_MAX}));
 
         // ------------------------------------
-        // 4. 費用フィルター (cost) - 「以下」で絞り込み
+        // 4. 費用フィルター (cost) - ラジオボタン＋入力欄（単一最大値）
         // ------------------------------------
-        fragment.appendChild(createCheckboxGroup('費用 (円)', 'cost', COST_OPTIONS, 'チェックした費用以下のレシピを表示 (最も安いチェックが適用されます)', COST_OPTIONS.map(c => `¥${c}以下`)));
+        fragment.appendChild(createRadioGroup('費用 (円・最大)', 'cost', COST_OPTIONS, '選択肢または入力欄で指定した費用以下のレシピを表示', COST_OPTIONS.map(c => `¥${c}以下`), 'radio-input', {min: 100, max: COST_MAX}));
 
         filterContent.appendChild(fragment);
 
@@ -680,28 +789,62 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         filterContent.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', updateActiveFilters);
         });
+        filterContent.querySelectorAll('input[type="radio"], input[type="number"]').forEach(input => {
+            input.addEventListener('change', updateActiveFilters);
+            input.addEventListener('input', updateActiveFilters);
+        });
     }
 
     /**
-     * チェックボックスの状態を activeFilters に反映する
+     * チェックボックス/ラジオボタン/入力欄の状態を activeFilters に反映する
      */
     function updateActiveFilters() {
-        // 全てクリアしてから再構築
-        activeFilters = {
-            'fish-name': new Set(),
-            difficulty: new Set(),
-            time: new Set(),
-            cost: new Set()
-        };
-
+        // fish-name は Setを再構築
+        activeFilters['fish-name'].clear();
         filterContent.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-            const key = checkbox.dataset.filterKey;
-            if (activeFilters[key]) {
-                activeFilters[key].add(checkbox.value);
+            if (checkbox.dataset.filterKey === 'fish-name') {
+                activeFilters['fish-name'].add(checkbox.value);
             }
         });
+        
+        // difficulty, time, cost は単一の値を設定
+        ['difficulty', 'time', 'cost'].forEach(key => {
+            let selectedValue = null;
+            let customValue = null;
+
+            // 1. ラジオボタンの値を取得
+            const checkedRadio = filterContent.querySelector(`input[type="radio"][name="${key}"]:checked`);
+            if (checkedRadio) {
+                // 空値（制限なし）の場合はnullを設定
+                selectedValue = checkedRadio.value || null;
+            }
+
+            // 2. カスタム入力の値を取得
+            const customInput = filterContent.querySelector(`input[type="number"][data-filter-key="${key}"][data-input-type="custom"]`);
+            if (customInput) {
+                const val = parseFloat(customInput.value);
+                if (!isNaN(val) && val > 0) {
+                    customValue = String(val);
+                }
+            }
+
+            // 適用する値の決定ロジック
+            if (customValue) {
+                // カスタム入力があればそれを優先
+                activeFilters[key] = customValue;
+            } else if (selectedValue) {
+                // ラジオボタンが選択されていればその値を適用
+                activeFilters[key] = selectedValue;
+            } else {
+                // どちらもなければnull（フィルター解除）
+                activeFilters[key] = null;
+            }
+        });
+
+        // モーダルが閉じられるまで applyFiltersAndRender は呼ばない
     }
     
+    // ... renderTable (変更なし) ...
     // render table rows from list
     function renderTable(list){
         clearTable();
@@ -800,6 +943,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
         tbody.appendChild(fragment);
     }
+    // ... displayDetail (変更なし) ...
     
     // Utility: 画像を表示するエレメントを作成する関数
     function createPictureElement(src, altText, maxHeight = '250px') {
@@ -932,9 +1076,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
                 const card = document.createElement('div');
                 card.className = 'recipe-step-card'; 
-                card.style.border = '1px solid #ddd'; 
-                card.style.padding = '10px';
-                card.style.margin = '5px';
+                card.style.border = '1px solid #dee2e6'; 
+                card.style.padding = '15px';
+                card.style.borderRadius = '6px';
+                card.style.background = 'var(--card)';
+                card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
 
                 const stepPicIndex = i + 1;
                 const stepPicSrc = pictures[stepPicIndex];
@@ -951,7 +1097,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 }
 
                 const p = document.createElement('p');
-                p.innerHTML = `<span style="font-weight:bold; color:#007bff;">${stepNo}.</span> ${step}`;
+                p.innerHTML = `<span style="font-weight:bold; color:var(--accent);">${stepNo}.</span> ${step}`;
                 card.appendChild(p);
 
                 gridContainer.appendChild(card);
@@ -975,7 +1121,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 
     /**
-     * フィルターを適用し、テーブルを再描画する (モーダルチェックボックス対応版)
+     * フィルターを適用し、テーブルを再描画する (ラジオボタン/入力対応版)
      */
     function applyFiltersAndRender(){
         // 必須要素の存在チェック
@@ -1012,7 +1158,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             });
         }
 
-        // ★★★ 3. チェックボックスによる統合されたフィルターロジックの適用 ★★★
+        // ★★★ 3. フィルターロジックの適用 (修正済み) ★★★
         list = list.filter(item => {
             // 下処理アイテムはレシピ固有のフィルター対象外
             if (item._type === 'pre') return true;
@@ -1021,46 +1167,29 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             const activeFish = activeFilters['fish-name'];
             if (activeFish.size > 0) {
                 const itemFish = Array.isArray(item['fish-name']) ? item['fish-name'].map(f => f.trim()) : [];
-                // 選択された魚種のどれか一つでもレシピに含まれていればOK
                 const match = itemFish.some(f => activeFish.has(f));
                 if (!match) return false;
             }
 
-            // --- 難易度フィルター (difficulty) - MINIMUM MAX値条件 ---
-            const activeDiff = activeFilters.difficulty;
-            if (activeDiff.size > 0) {
-                // 選択された値の中で「最も厳しい（小さい）」難易度を抽出 (難易度はこの値以下で絞るため)
-                const minRequiredMaxDiff = Math.min(...Array.from(activeDiff).map(v => parseFloat(v)));
+            // --- 難易度フィルター (difficulty) - 最大値条件 ---
+            const maxDiff = activeFilters.difficulty ? parseFloat(activeFilters.difficulty) : null;
+            if (maxDiff !== null && item.difficulty != null) {
                 const itemDiff = parseFloat(item.difficulty);
-                
-                // difficultyが設定されている場合のみ比較
-                if (item.difficulty != null) {
-                    if (itemDiff > minRequiredMaxDiff) return false;
-                }
+                if (!isNaN(itemDiff) && itemDiff > maxDiff) return false;
             }
 
-            // --- 所要時間フィルター (time) - MINIMUM MAX値条件 ---
-            const activeTime = activeFilters.time;
-            if (activeTime.size > 0) {
-                // 選択された値の中で「最も短い」時間 (maxTime) を抽出
-                const minMaxTime = Math.min(...Array.from(activeTime).map(v => parseFloat(v)));
+            // --- 所要時間フィルター (time) - 最大値条件 ---
+            const maxTime = activeFilters.time ? parseFloat(activeFilters.time) : null;
+            if (maxTime !== null && item.time != null) {
                 const itemTime = parseFloat(item.time);
-
-                if (item.time != null) {
-                    if (itemTime > minMaxTime) return false;
-                }
+                if (!isNaN(itemTime) && itemTime > maxTime) return false;
             }
             
-            // --- 費用フィルター (cost) - MINIMUM MAX値条件 ---
-            const activeCost = activeFilters.cost;
-            if (activeCost.size > 0) {
-                // 選択された値の中で「最も安い」金額 (maxCost) を抽出
-                const minMaxCost = Math.min(...Array.from(activeCost).map(v => parseFloat(v)));
+            // --- 費用フィルター (cost) - 最大値条件 ---
+            const maxCost = activeFilters.cost ? parseFloat(activeFilters.cost) : null;
+            if (maxCost !== null && item.cost != null) {
                 const itemCost = parseFloat(item.cost);
-
-                if (item.cost != null) {
-                    if (itemCost > minMaxCost) return false;
-                }
+                if (!isNaN(itemCost) && itemCost > maxCost) return false;
             }
 
             return true;
@@ -1099,10 +1228,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         renderTable(list);
         
-        let activeCount = 0;
-        for (const key in activeFilters) {
-             activeCount += activeFilters[key].size;
-        }
+        let activeCount = activeFilters['fish-name'].size;
+        ['difficulty', 'time', 'cost'].forEach(key => {
+            if (activeFilters[key] !== null) activeCount++;
+        });
 
         let filterText = '';
         if (activeCount > 0) {
@@ -1138,7 +1267,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     // ★★★ フィルターモーダル関連のイベントリスナー ★★★
     if (filterOpenBtn) {
         filterOpenBtn.addEventListener('click', () => {
-             // モーダル表示時に毎回チェックボックスの状態を更新し、表示をリフレッシュ
+             // モーダル表示時に毎回チェックボックス/ラジオボタンの状態を更新し、表示をリフレッシュ
              setupFilterModal(flatList); 
              if (filterModal) filterModal.style.display = 'flex'; // flexで表示
         });
@@ -1155,7 +1284,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     if (applyFilterBtn) {
         applyFilterBtn.addEventListener('click', () => {
-             updateActiveFilters(); // チェックボックスの状態を確定
+             updateActiveFilters(); // チェックボックス/ラジオボタン/入力欄の状態を確定
              applyFiltersAndRender();
              if (filterModal) filterModal.style.display = 'none'; // モーダルを閉じる
         });
@@ -1166,9 +1295,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
              // 全てのフィルターをクリア
              activeFilters = {
                 'fish-name': new Set(),
-                difficulty: new Set(),
-                time: new Set(),
-                cost: new Set()
+                difficulty: null,
+                time: null,
+                cost: null
              };
              // UIをリセットするために再度セットアップ
              setupFilterModal(flatList); 
