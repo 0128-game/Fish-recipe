@@ -464,7 +464,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 <script>
 /*
- * 最終修正版: 魚種フィルターをAND条件に変更 ＋ 時間/費用にカスタム入力欄を追加
+ * 最終修正版: 魚種フィルターを厳密なAND条件 (b ⊆ a) に変更 ＋ 時間/費用にカスタム入力欄を追加
  */
 
 (function(){
@@ -799,8 +799,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             }
         });
         const uniqueFish = Array.from(fishSet).sort();
-        // ユーザーにAND条件であることを示すヒントテキストに変更
-        fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, '選択した魚種の**すべて**を使うレシピを表示'));
+        // ユーザーにAND条件であることを示すヒントテキスト
+        fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, 'レシピに使う魚が、選択した魚種のすべてに含まれるものを表示 (b ⊆ a)'));
 
         // 2. 難易度フィルター (difficulty) - ラジオボタン（単一選択）
         fragment.appendChild(createRadioGroup('難易度 (最大)', 'difficulty', DIFFICULTY_OPTIONS, '選択した難易度以下のレシピを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
@@ -831,24 +831,18 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         const key = input.dataset.filterKey;
 
         if (key === 'time' || key === 'cost') {
-            // カスタム入力欄のコンテナを取得
             const customContainer = filterContent.querySelector(`.filter-input-container input[data-filter-key="${key}"]`).parentNode;
 
-            // ラジオボタンの変更
             if (input.type === 'radio') {
                 if (input.value === 'CUSTOM') {
-                    // カスタムが選択された場合、入力欄を表示
                     customContainer.style.display = 'block';
                 } else {
-                    // それ以外が選択された場合、入力欄を非表示にし、値をクリア
                     customContainer.style.display = 'none';
-                    // 入力欄の値もリセット
-                    customContainer.querySelector('input[type="number"]').value = ''; 
+                    customContainer.querySelector('input[type="number"]').value = '';
                 }
             }
         }
         
-        // ラジオボタンや入力欄の変更があったら、activeFiltersを更新
         updateActiveFilters();
     }
 
@@ -1203,13 +1197,13 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             // 下処理アイテムはレシピ固有のフィルター対象外
             if (item._type === 'pre') return true;
 
-            // --- 魚種フィルター (fish-name) - AND条件 ---
-            const activeFish = activeFilters['fish-name']; // ユーザーが選択した魚種リスト (Set)
+            // --- 魚種フィルター (fish-name) - AND条件 (b ⊆ a) ---
+            const activeFish = activeFilters['fish-name']; // a: ユーザーが選択した魚種リスト (Set)
             if (activeFish.size > 0) {
-                // レシピで使われている魚種を取得し、整形
+                // b: レシピで使われている魚種を取得し、整形
                 const itemFish = Array.isArray(item['fish-name']) ? item['fish-name'].map(f => f.trim()) : [];
                 
-                // AND条件のチェック: レシピで使われている魚すべてが、ユーザーの選択肢に含まれているか？
+                // b ⊆ a のチェック: レシピで使われている魚 (b) すべてが、ユーザーの選択肢 (a) に含まれているか？
                 // itemFish.every(...) が false の場合、レシピに必要な魚の中に、選択されていない魚が含まれている
                 const allMatch = itemFish.every(f => activeFish.has(f));
                 
