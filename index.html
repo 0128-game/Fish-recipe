@@ -464,8 +464,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 <script>
 /*
- * 最終修正版: 魚種フィルター (b ⊆ a) ＋ カスタム入力欄対応 ＋ 絞り込みフィルターを下処理に適用
- * ★★★ ＋ おすすめレシピ提案機能を追加 ★★★
+ * 最終統合版: レシピリスト、詳細表示、フィルターモーダル、おすすめ提案機能を統合。
+ * 魚種フィルター (b ⊆ a)、カスタム入力、絞り込みフィルターを下処理に適用、
+ * 提案画面にフィルターボタンを動的追加済み。
  */
 
 (function(){
@@ -476,23 +477,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         './recipes.json'
     ];
 
-    // ★★★ リスト/フィルター関連の要素 (既存のHTML要素を使用) ★★★
+    // ★★★ 共通要素 ★★★
     const wrap = document.getElementById('wrap');
+    
+    // ★★★ リスト画面の要素 ★★★
     const tbody = document.getElementById('tbody');
     const qInput = document.getElementById('q');
     const filterType = document.getElementById('filterType');
     const sortBy = document.getElementById('sortBy');
     const reloadBtn = document.getElementById('reloadBtn');
     const message = document.getElementById('message');
+    const backToRecommendBtn = document.getElementById('backToRecommendBtn'); // リストに戻るボタン (提案画面から用)
 
-    // ★★★ 新しいフィルターモーダル関連の要素 (HTMLへの追加が必要です) ★★★
+    // ★★★ フィルターモーダル要素 ★★★
     const filterOpenBtn = document.getElementById('filterOpenBtn'); 
     const filterModal = document.getElementById('filterModal');     
     const filterContent = document.getElementById('filterContent'); 
     const applyFilterBtn = document.getElementById('applyFilterBtn'); 
     const filterClearBtn = document.getElementById('filterClearBtn'); 
     
-    // ★★★ 詳細コンテナの要素 ★★★
+    // ★★★ 詳細画面の要素 ★★★
     const detailTitle = document.getElementById('detailTitle');
     const detailSubtitle = document.getElementById('detailSubtitle');
     const detailImageContainer = document.getElementById('detailImageContainer');
@@ -504,30 +508,29 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     const detailProps = document.getElementById('detailProps');
     const propsSection = document.getElementById('propsSection');
 
-    // ★★★ レシピ提案機能の新しい要素 (HTMLへの追加が必要です) ★★★
-    const recommendOpenBtn = document.getElementById('recommendOpenBtn'); // 提案開始ボタン
-    const recommendContainer = document.getElementById('recommendContainer'); // 提案機能のコンテナ
-    const backToRecommendBtn = document.getElementById('backToRecommendBtn'); // 提案機能からリストに戻るボタン
-    const recommendOptions = document.getElementById('recommendOptions'); // ラジオボタン、入力欄のコンテナ
-    const recommendResult = document.getElementById('recommendResult'); // 結果表示エリア
+    // ★★★ レシピ提案機能の要素 ★★★
+    const recommendOpenBtn = document.getElementById('recommendOpenBtn');
+    const recommendContainer = document.getElementById('recommendContainer');
+    const recommendOptions = document.getElementById('recommendOptions');
+    const recommendResult = document.getElementById('recommendResult');
 
     let rawData = null;
     let flatList = []; // merged list with type annotation
     
-    // フィルタの状態を保持するオブジェクト (魚種はSet、難易度/時間/費用は単一の値)
+    // フィルタの状態を保持するオブジェクト
     let activeFilters = {
-        'fish-name': new Set(), // チェックボックス形式 (複数選択)
-        difficulty: null,       // ラジオボタン形式 (単一値)
-        time: null,             // ラジオボタン/入力形式 (単一値)
-        cost: null              // ラジオボタン/入力形式 (単一値)
+        'fish-name': new Set(),
+        difficulty: null,
+        time: null,
+        cost: null
     };
     // 固定オプション
     const DIFFICULTY_OPTIONS = ['1', '2', '3', '4', '5'];
     const TIME_OPTIONS = [15, 30, 60]; 
     const COST_OPTIONS = [500, 1000, 2000];
-    const TIME_MAX = 120; // 入力欄の最大値
-    const COST_MAX = 5000; // 入力欄の最大値
-    const RECOMMEND_OPTIONS = [1, 3, 9]; // 提案の食数オプション
+    const TIME_MAX = 120;
+    const COST_MAX = 5000;
+    const RECOMMEND_OPTIONS = [1, 3, 9];
 
 
     // Utility: safe text node creation
@@ -587,51 +590,35 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     function clearTable(){ 
         if(tbody) tbody.innerHTML = ''; 
     }
+
+    // --- フィルターUI構築関数 ---
     
-    // --- フィルターUI構築関数 (省略) ---
-    // (createCheckboxGroup, createRadioGroup は長いため、ここでは内容を省略し、
-    //  直前の回答と同じコードがここに存在するものとして扱います。)
-    // ------------------------------------
-
-
-    /**
-     * チェックボックスグループを生成するヘルパー関数 (魚種用)
-     */
     function createCheckboxGroup(title, key, values, hintText = '') {
         const fieldset = document.createElement('fieldset');
         fieldset.className = 'filter-group';
-
         const legend = document.createElement('legend');
         legend.textContent = title;
         fieldset.appendChild(legend);
-
         if (hintText) {
              const hint = elText('p', hintText, 'filter-hint');
              fieldset.appendChild(hint);
         }
-
         values.forEach(value => {
             const strValue = String(value);
             const id = `${key}-${strValue.replace(/[^a-zA-Z0-9]/g, '-')}`;
-
             const div = document.createElement('div');
             div.className = 'filter-item';
-
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = id;
             checkbox.value = strValue;
             checkbox.dataset.filterKey = key;
-            
-            // activeFiltersに値が含まれていればチェック
             if (activeFilters[key] && activeFilters[key].has(strValue)) {
                 checkbox.checked = true;
             }
-
             const label = document.createElement('label');
             label.htmlFor = id;
             label.textContent = strValue;
-
             div.appendChild(checkbox);
             div.appendChild(label);
             fieldset.appendChild(div);
@@ -639,28 +626,21 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         return fieldset;
     }
 
-    /**
-     * ラジオボタングループを生成するヘルパー関数 (難易度/時間/費用用)
-     * @param {string} type - 'radio' or 'radio-input'
-     */
     function createRadioGroup(title, key, values, hintText = '', labels = null, type = 'radio', inputProps = {}) {
         const fieldset = document.createElement('fieldset');
         fieldset.className = 'filter-group';
-
         const legend = document.createElement('legend');
         legend.textContent = title;
         fieldset.appendChild(legend);
-
         if (hintText) {
              const hint = elText('p', hintText, 'filter-hint');
              fieldset.appendChild(hint);
         }
         
-        // ----------------- ラジオボタン群 -----------------
         const radioDiv = document.createElement('div');
         radioDiv.className = 'radio-options-container';
 
-        // ラジオボタン: 「制限なし」
+        // 制限なし
         const allRadioDiv = document.createElement('div');
         allRadioDiv.className = 'filter-item';
         const allId = `${key}-all`;
@@ -668,14 +648,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         allRadio.type = 'radio';
         allRadio.id = allId;
         allRadio.name = key;
-        allRadio.value = ''; // 空文字でフィルター解除を示す
+        allRadio.value = '';
         allRadio.dataset.filterKey = key;
-        
-        // activeFilters[key]がnullまたは空文字の場合、チェックする
         if (activeFilters[key] === null || activeFilters[key] === '') {
             allRadio.checked = true;
         }
-
         const allLabel = document.createElement('label');
         allLabel.htmlFor = allId;
         allLabel.textContent = '制限なし';
@@ -683,37 +660,30 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         allRadioDiv.appendChild(allLabel);
         radioDiv.appendChild(allRadioDiv);
 
-        // ラジオボタン: 定義済みの値
+        // 定義済みの値
         values.forEach((value, index) => {
             const strValue = String(value);
             const id = `${key}-${strValue}`;
             const labelText = labels ? labels[index] : strValue;
-
             const div = document.createElement('div');
             div.className = 'filter-item';
-
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.id = id;
             radio.name = key;
             radio.value = strValue;
             radio.dataset.filterKey = key;
-            
-            // activeFilters[key]がこの値の場合、チェックする
             if (activeFilters[key] === strValue) {
                 radio.checked = true;
             }
-
             const label = document.createElement('label');
             label.htmlFor = id;
             label.textContent = labelText;
-
             div.appendChild(radio);
             div.appendChild(label);
             radioDiv.appendChild(div);
         });
         
-        // ----------------- カスタムラジオボタン (時間と費用のみ) -----------------
         let inputContainer = null;
         if (type === 'radio-input') {
             
@@ -728,7 +698,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             customRadio.value = 'CUSTOM';
             customRadio.dataset.filterKey = key;
             
-            // activeFiltersに数字が格納されており、かつそれが定義済みの値でなければ、CUSTOMが選択されている
             const isCustomSelected = activeFilters[key] !== null && activeFilters[key] !== '' && !values.map(String).includes(activeFilters[key]);
             if (isCustomSelected) {
                 customRadio.checked = true;
@@ -741,16 +710,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             customRadioDiv.appendChild(customLabel);
             radioDiv.appendChild(customRadioDiv);
             
-            fieldset.appendChild(radioDiv); // ラジオボタン全てを fieldset に追加
+            fieldset.appendChild(radioDiv);
             
 
-            // ----------------- カスタム入力フィールド -----------------
+            // カスタム入力フィールド
             inputContainer = document.createElement('div');
             inputContainer.className = 'filter-input-container';
             inputContainer.style.marginTop = '10px';
             inputContainer.style.borderTop = '1px dashed #e2e8f0';
             inputContainer.style.paddingTop = '10px';
-            // CUSTOMが選択されていない場合、非表示にする
             if (!isCustomSelected) {
                 inputContainer.style.display = 'none';
             }
@@ -786,27 +754,22 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             inputContainer.appendChild(input);
             fieldset.appendChild(inputContainer);
         } else {
-            fieldset.appendChild(radioDiv); // radioタイプの場合は、ここで追加
+            fieldset.appendChild(radioDiv);
         }
 
         return fieldset;
     }
 
 
-    /**
-     * フィルターモーダルの設定とチェックボックス/ラジオボタンの生成
-     * @param {Array} list - flatList
-     */
     function setupFilterModal(list){
         if (!filterContent) return; 
-
         filterContent.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // 1. 魚種フィルター (fish-name) - チェックボックス（複数選択）
+        // 魚種フィルター
         const fishSet = new Set();
         list.forEach(item => {
-            if (Array.isArray(item['fish-name'])) { 
+            if (Array.isArray(item['fish-name'])) {
                 item['fish-name'].forEach(fish => {
                     const trimmedFish = fish.trim();
                     if (trimmedFish) fishSet.add(trimmedFish);
@@ -814,16 +777,15 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             }
         });
         const uniqueFish = Array.from(fishSet).sort();
-        // ユーザーにAND条件であることを示すヒントテキスト
         fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, 'レシピ/下処理に使う魚が、選択した魚種のすべてに含まれるものを表示 (b ⊆ a)'));
 
-        // 2. 難易度フィルター (difficulty) - ラジオボタン（単一選択）
+        // 難易度フィルター
         fragment.appendChild(createRadioGroup('難易度 (最大)', 'difficulty', DIFFICULTY_OPTIONS, '選択した難易度以下のアイテムを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
 
-        // 3. 所要時間フィルター (time) - ラジオボタン＋カスタム入力欄
+        // 所要時間フィルター
         fragment.appendChild(createRadioGroup('所要時間 (分・最大)', 'time', TIME_OPTIONS, '選択肢またはカスタム入力で指定した時間以下のアイテムを表示', TIME_OPTIONS.map(t => `${t}分以内`), 'radio-input', {min: 1, max: TIME_MAX}));
 
-        // 4. 費用フィルター (cost) - ラジオボタン＋カスタム入力欄
+        // 費用フィルター
         fragment.appendChild(createRadioGroup('費用 (円・最大)', 'cost', COST_OPTIONS, '選択肢またはカスタム入力で指定した費用以下のアイテムを表示', COST_OPTIONS.map(c => `¥${c}以下`), 'radio-input', {min: 100, max: COST_MAX}));
 
         filterContent.appendChild(fragment);
@@ -838,9 +800,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
     }
 
-    /**
-     * ラジオボタン/入力欄の変更を処理し、入力欄の表示/非表示を制御する
-     */
     function handleRadioInputChange(event) {
         const input = event.target;
         const key = input.dataset.filterKey;
@@ -862,9 +821,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
 
-    /**
-     * チェックボックス/ラジオボタン/入力欄の状態を activeFilters に反映する
-     */
     function updateActiveFilters() {
         // fish-name は Setを再構築
         activeFilters['fish-name'].clear();
@@ -876,30 +832,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         
         // difficulty, time, cost は単一の値を設定
         ['difficulty', 'time', 'cost'].forEach(key => {
-            activeFilters[key] = null; // まずリセット
+            activeFilters[key] = null;
 
-            // 1. ラジオボタンの値を取得
             const checkedRadio = filterContent.querySelector(`input[type="radio"][name="${key}"]:checked`);
             if (checkedRadio) {
                 if (checkedRadio.value === '') {
-                    // 制限なし
                     activeFilters[key] = null;
                 } else if (checkedRadio.value === 'CUSTOM') {
-                    // カスタムが選択されている場合、入力欄の値を採用
                     const customInput = filterContent.querySelector(`input[type="number"][data-filter-key="${key}"][data-input-type="custom"]`);
                     const val = parseFloat(customInput.value);
                     if (!isNaN(val) && val > 0) {
                         activeFilters[key] = String(val);
                     }
                 } else {
-                    // 定義済みオプション
                     activeFilters[key] = checkedRadio.value;
                 }
             }
         });
     }
     
-    // render table rows from list
+    // --- テーブル描画と詳細表示関数 (前回答と同じ) ---
     function renderTable(list){
         clearTable();
         if (!tbody) return; 
@@ -998,14 +950,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         tbody.appendChild(fragment);
     }
     
-    // Utility: 画像を表示するエレメントを作成する関数
     function createPictureElement(src, altText, maxHeight = '250px') {
         if (!src || src === 'null' || src === '') return null;
-
         const img = document.createElement('img');
         img.src = src;
         img.alt = altText || '画像';
-
         img.style.maxWidth = '100%';
         img.style.maxHeight = maxHeight;
         img.style.width = 'auto';
@@ -1013,11 +962,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         img.style.borderRadius = '4px';
         img.style.display = 'block';
         img.style.margin = '0 auto';
-
         return img;
     }
 
-    // 詳細情報を表示する関数
     function displayDetail(item){
         if(!detailTitle || !detailSubtitle || !detailMeta || !detailImageContainer || !detailIngredients || !detailRecipe || !detailMemo || !propsSection) {
             console.error("Missing detail element(s) in HTML.");
@@ -1027,7 +974,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         if (wrap) {
             wrap.classList.remove('list-view');
             wrap.classList.add('detail-view');
-            wrap.classList.remove('recommend-view'); // 提案画面から詳細に遷移する場合に対応
+            wrap.classList.remove('recommend-view');
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1056,7 +1003,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                     preBtn.textContent = '下処理: ' + (preItem.title || preItem.No); 
                     preBtn.className = 'pill pre-link-pill';
                     preBtn.style.cursor = 'pointer'; 
-
                     preBtn.addEventListener('click', ()=> displayDetail(preItem)); 
                     detailMeta.appendChild(preBtn);
                 } else {
@@ -1172,11 +1118,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             detailMemo.appendChild(ulm);
         }
     }
+    // --- テーブル描画と詳細表示関数 ここまで ---
 
 
-    /**
-     * フィルターを適用し、テーブルを再描画する
-     */
+    // --- フィルター適用と描画 ---
     function applyFiltersAndRender(){
         if(!qInput || !filterType || !sortBy || !message) { return; }
 
@@ -1210,35 +1155,28 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         // 3. フィルターロジックの適用 
         list = list.filter(item => {
-
-            // --- 魚種フィルター (fish-name) - AND条件 (b ⊆ a) ---
-            const activeFish = activeFilters['fish-name']; // a: ユーザーが選択した魚種リスト (Set)
+            // 魚種フィルター (fish-name) - AND条件 (b ⊆ a)
+            const activeFish = activeFilters['fish-name'];
             if (activeFish.size > 0) {
-                // b: レシピ/下処理で使われている魚種を取得し、整形
                 const itemFish = Array.isArray(item['fish-name']) ? item['fish-name'].map(f => f.trim()) : [];
-                
-                // b ⊆ a のチェック
-                const allMatch = itemFish.every(f => activeFish.has(f));
-                
-                // itemFishが空の配列の場合 (魚種が定義されていないアイテム)、every()はtrueを返すため通過
-                if (!allMatch) return false;
+                if (!itemFish.every(f => activeFish.has(f))) return false;
             }
 
-            // --- 難易度フィルター (difficulty) - 最大値条件 ---
+            // 難易度フィルター (difficulty) - 最大値条件
             const maxDiff = activeFilters.difficulty ? parseFloat(activeFilters.difficulty) : null;
             if (maxDiff !== null && item.difficulty != null) {
                 const itemDiff = parseFloat(item.difficulty);
                 if (!isNaN(itemDiff) && itemDiff > maxDiff) return false;
             }
 
-            // --- 所要時間フィルター (time) - 最大値条件 ---
+            // 所要時間フィルター (time) - 最大値条件
             const maxTime = activeFilters.time ? parseFloat(activeFilters.time) : null;
             if (maxTime !== null && item.time != null) {
                 const itemTime = parseFloat(item.time);
                 if (!isNaN(itemTime) && itemTime > maxTime) return false;
             }
             
-            // --- 費用フィルター (cost) - 最大値条件 ---
+            // 費用フィルター (cost) - 最大値条件
             const maxCost = activeFilters.cost ? parseFloat(activeFilters.cost) : null;
             if (maxCost !== null && item.cost != null) {
                 const itemCost = parseFloat(item.cost);
@@ -1292,12 +1230,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)${filterText}`;
     }
+    // --- フィルター適用と描画 ここまで ---
+
 
     // --- おすすめレシピ提案機能のロジック ---
 
-    /**
-     * 食数選択ラジオボタンとカスタム入力欄を構築する
-     */
     function setupRecommendOptions() {
         if (!recommendOptions) return;
         
@@ -1308,6 +1245,38 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         const title = '提案するレシピの食数';
         const values = RECOMMEND_OPTIONS;
         
+        // --- 1. フィルターサマリーとボタンの追加 (今回の修正点) ---
+        const filterButtonContainer = document.createElement('div');
+        filterButtonContainer.style.marginBottom = '20px';
+        filterButtonContainer.style.paddingBottom = '15px';
+        filterButtonContainer.style.borderBottom = '1px solid #e2e8f0';
+
+        const filterSummaryBtn = document.createElement('button');
+        filterSummaryBtn.id = 'recommendFilterSummaryBtn';
+        filterSummaryBtn.style.padding = '8px 15px';
+        filterSummaryBtn.style.borderRadius = '6px';
+        filterSummaryBtn.style.backgroundColor = '#f7fafc';
+        filterSummaryBtn.style.border = '1px solid #cbd5e0';
+        filterSummaryBtn.style.cursor = 'pointer';
+        filterSummaryBtn.style.color = '#4a5568';
+        filterSummaryBtn.style.fontWeight = 'bold';
+        
+        let activeCount = activeFilters['fish-name'].size;
+        ['difficulty', 'time', 'cost'].forEach(key => {
+            if (activeFilters[key] !== null) activeCount++;
+        });
+
+        filterSummaryBtn.textContent = `⚙️ 現在の絞り込み設定を確認・変更 (${activeCount} 種類適用中)`;
+        
+        filterSummaryBtn.addEventListener('click', () => {
+             setupFilterModal(flatList); 
+             if (filterModal) filterModal.style.display = 'flex';
+        });
+
+        filterButtonContainer.appendChild(filterSummaryBtn);
+        recommendOptions.appendChild(filterButtonContainer);
+        // --------------------------------------------------------
+
         const fieldset = document.createElement('fieldset');
         fieldset.className = 'filter-group recommend-options-group';
         fieldset.style.border = 'none';
@@ -1335,7 +1304,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             radio.name = key;
             radio.value = strValue;
             
-            // デフォルトで3食を選択
             if (value === 3) radio.checked = true;
 
             const label = document.createElement('label');
@@ -1394,7 +1362,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         inputContainer.appendChild(label);
         inputContainer.appendChild(input);
         
-        // 初期状態では非表示（カスタムが選択された時のみ表示）
         inputContainer.style.display = 'none';
 
         // 提案ボタン
@@ -1427,9 +1394,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
 
-    /**
-     * フィルターを適用し、ランダムなレシピを提案画面に表示する
-     */
     function generateAndRenderRecommendations() {
         if (!recommendResult || !recommendOptions) return;
         
@@ -1456,32 +1420,25 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         // 2. レシピアイテムのみを抽出し、既存のフィルターを適用
         let potentialRecipes = flatList.filter(item => item._type === 'recipe');
         
-        // NOTE: レシピ提案では、下処理(pre)アイテムは除外されるように type: 'recipe'でフィルタ
-        // 絞り込みロジックは applyFiltersAndRender と同じものを使用し、レシピアイテムのみに適用
-        
         potentialRecipes = potentialRecipes.filter(item => {
-            // --- 魚種フィルター (fish-name) - AND条件 (b ⊆ a) ---
             const activeFish = activeFilters['fish-name'];
             if (activeFish.size > 0) {
                 const itemFish = Array.isArray(item['fish-name']) ? item['fish-name'].map(f => f.trim()) : [];
                 if (!itemFish.every(f => activeFish.has(f))) return false;
             }
 
-            // --- 難易度フィルター (difficulty) - 最大値条件 ---
             const maxDiff = activeFilters.difficulty ? parseFloat(activeFilters.difficulty) : null;
             if (maxDiff !== null && item.difficulty != null) {
                 const itemDiff = parseFloat(item.difficulty);
                 if (!isNaN(itemDiff) && itemDiff > maxDiff) return false;
             }
 
-            // --- 所要時間フィルター (time) - 最大値条件 ---
             const maxTime = activeFilters.time ? parseFloat(activeFilters.time) : null;
             if (maxTime !== null && item.time != null) {
-                const itemTime = parseFloat(item.time);
+                const itemTime = parseFloat(parseFloat(item.time));
                 if (!isNaN(itemTime) && itemTime > maxTime) return false;
             }
             
-            // --- 費用フィルター (cost) - 最大値条件 ---
             const maxCost = activeFilters.cost ? parseFloat(activeFilters.cost) : null;
             if (maxCost !== null && item.cost != null) {
                 const itemCost = parseFloat(item.cost);
@@ -1504,7 +1461,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
 
 
-        // 3. ランダムにレシピを選択 (シャッフル & 抽出)
+        // 3. ランダムにレシピを選択
         for (let i = potentialRecipes.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [potentialRecipes[i], potentialRecipes[j]] = [potentialRecipes[j], potentialRecipes[i]];
@@ -1521,6 +1478,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         listContainer.style.display = 'grid';
         listContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
         listContainer.style.gap = '20px';
+        listContainer.style.marginTop = '20px';
         
         recommendedList.forEach((item, index) => {
             const card = document.createElement('div');
@@ -1553,29 +1511,18 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         recommendResult.appendChild(listContainer);
     }
 
-    /**
-     * 提案画面に切り替える (DOM操作)
-     */
     function openRecommendScreen() {
         if (!wrap) return;
         
-        // 画面モードを切り替え
         wrap.classList.remove('list-view');
         wrap.classList.remove('detail-view');
         wrap.classList.add('recommend-view');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // オプションをセットアップ
         setupRecommendOptions();
-        
-        // 初期提案を生成 (デフォルトの3食)
-        // NOTE: setupRecommendOptionsで3食がチェックされているため、手動でgenerateAndRenderRecommendations()を呼び出す
         generateAndRenderRecommendations();
     }
     
-    /**
-     * 提案画面からリスト画面に戻る (DOM操作)
-     */
     function backToListFromRecommend() {
         if (!wrap) return;
         
@@ -1587,50 +1534,31 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     // --- おすすめレシピ提案機能のロジック ここまで ---
 
 
-    // reload button
-    if(reloadBtn) {
-        reloadBtn.addEventListener('click', ()=> {
-            loadData();
-        });
-    }
+    // --- イベントリスナー ---
+    if(reloadBtn) reloadBtn.addEventListener('click', ()=> loadData());
+    if(backToListBtn) backToListBtn.addEventListener('click', ()=> {
+        if(wrap) {
+            wrap.classList.remove('detail-view');
+            wrap.classList.remove('recommend-view');
+            wrap.classList.add('list-view');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
-    // リストに戻るボタンのイベントリスナー
-    if(backToListBtn) {
-        backToListBtn.addEventListener('click', ()=> {
-            if(wrap) {
-                wrap.classList.remove('detail-view');
-                wrap.classList.remove('recommend-view'); // 提案画面から詳細に遷移した場合に対応
-                wrap.classList.add('list-view');
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // 提案画面からリストに戻るボタンのイベントリスナー
-    if (backToRecommendBtn) {
-         backToRecommendBtn.addEventListener('click', backToListFromRecommend);
-    }
+    if (backToRecommendBtn) backToRecommendBtn.addEventListener('click', backToListFromRecommend);
     
-    // フィルターと検索のイベントリスナー
     if(qInput) qInput.addEventListener('input', ()=> applyFiltersAndRender());
     if(filterType) filterType.addEventListener('change', ()=> applyFiltersAndRender());
     if(sortBy) sortBy.addEventListener('change', ()=> applyFiltersAndRender());
     
-    // ★★★ 提案機能の開始ボタン ★★★
-    if (recommendOpenBtn) {
-        recommendOpenBtn.addEventListener('click', openRecommendScreen);
-    }
-    // ★★★ 提案機能の開始ボタン ここまで ★★★
+    if (recommendOpenBtn) recommendOpenBtn.addEventListener('click', openRecommendScreen);
     
-    // ★★★ フィルターモーダル関連のイベントリスナー ★★★
     if (filterOpenBtn) {
         filterOpenBtn.addEventListener('click', () => {
-             // モーダル表示時に毎回チェックボックス/ラジオボタンの状態を更新し、表示をリフレッシュ
              setupFilterModal(flatList); 
-             if (filterModal) filterModal.style.display = 'flex'; // flexで表示
+             if (filterModal) filterModal.style.display = 'flex';
         });
         
-        // モーダルのオーバーレイをクリックで閉じる (簡易的なもの)
         if (filterModal) {
             filterModal.addEventListener('click', (e) => {
                 if (e.target === filterModal) {
@@ -1642,27 +1570,25 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
     if (applyFilterBtn) {
         applyFilterBtn.addEventListener('click', () => {
-             updateActiveFilters(); // チェックボックス/ラジオボタン/入力欄の状態を確定
+             updateActiveFilters();
              applyFiltersAndRender();
-             if (filterModal) filterModal.style.display = 'none'; // モーダルを閉じる
+             if (filterModal) filterModal.style.display = 'none';
         });
     }
     
     if (filterClearBtn) {
         filterClearBtn.addEventListener('click', () => {
-             // 全てのフィルターをクリア
              activeFilters = {
                 'fish-name': new Set(),
                 difficulty: null,
                 time: null,
                 cost: null
              };
-             // UIをリセットするために再度セットアップ
              setupFilterModal(flatList); 
              applyFiltersAndRender();
         });
     }
-    // ★★★ フィルターモーダル関連のイベントリスナー ここまで ★★★
+    // --- イベントリスナー ここまで ---
 
 
     // main loader
@@ -1679,7 +1605,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 if(message) message.textContent = `読み込み完了 — 合計 ${flatList.length} 件（recipes: ${Object.keys(json.recipes||{}).length}, preparations: ${Object.keys(json.preparations||{}).length}）`;
             }
             
-            // 初回表示
             applyFiltersAndRender();
             if(wrap) {
                  wrap.classList.remove('detail-view');
@@ -1703,7 +1628,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         getRaw: ()=> rawData,
         getFlat: ()=> flatList,
         activeFilters: activeFilters,
-        openRecommendScreen, // 提案機能をデバッグ用に公開
+        openRecommendScreen,
     };
 })();
 </script>
