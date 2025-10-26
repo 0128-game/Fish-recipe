@@ -369,98 +369,115 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 }
 </style>
 
-<div class="wrap" id="wrap">
-    <header>
-        <h1>魚のレシピリスト</h1>
-       <div class="controls">
-            <input type="search" id="q" placeholder="タイトル, 材料, 魚名などで検索">
+<div id="wrap" class="list-view"> 
+
+    <div id="listContainer" class="view-section">
+        <header>
+            <h1>🐟 魚レシピ・下処理検索システム</h1>
+            <p id="message">データを読み込み中...</p>
+        </header>
+
+        <div class="controls-area" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="q" placeholder="キーワード検索" style="flex: 2;">
             
-            <select id="filterType">
-                <option value="all">全て</option>
-                <option value="recipe">レシピ</option>
-                <option value="pre">下処理</option>
+            <select id="filterType" style="flex: 1;">
+                <option value="all">すべて</option>
+                <option value="recipe">レシピのみ</option>
+                <option value="pre">下処理のみ</option>
             </select>
-            
-            <button id="filterOpenBtn">絞り込み設定</button> 
-            
-            <select id="sortBy">
-                <option value="No" selected>No順 (昇順)</option>
-                <option value="-No">No順 (降順)</option>
+
+            <select id="sortBy" style="flex: 1;">
+                <option value="-No">No. (降順)</option>
+                <option value="No">No. (昇順)</option>
                 <option value="-difficulty">難易度 (高順)</option>
                 <option value="difficulty">難易度 (低順)</option>
-                <option value="-cost">費用 (高順)</option>
-                <option value="cost">費用 (低順)</option>
-                <option value="-time">時間 (長順)</option>
-                <option value="time">時間 (短順)</option>
                 <option value="title">タイトル</option>
             </select>
-            <button id="reloadBtn">データ再読み込み</button>
         </div>
-    </header>
 
-    <main id="app">
-        <p id="message" class="muted">データを読み込み中です...</p>
-        
-        <table id="recipeTable">
+        <div class="action-buttons-group" style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <button id="filterOpenBtn" style="padding: 10px 15px; background-color: #63b3ed; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 詳細フィルター</button>
+            
+            <button id="recommendOpenBtn" class="action-btn" style="padding: 10px 15px; background-color: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;">✨ おすすめレシピ提案</button>
+        </div>
+
+        <table id="recipeTable" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="width:80px">No</th>
-                    <th style="width:80px">Type</th>
-                    <th style="width:80px">Picture</th> 
-                    <th>Title / flavortxt</th>
-                    <th style="width:160px">魚 / 旬</th>
-                    <th style="width:120px">難易度 / 時間</th>
-                    <th style="width:120px">費用 / その他情報</th>
-                    <th style="width:110px">操作</th>
+                    <th>No.</th>
+                    <th>種類</th>
+                    <th>画像</th>
+                    <th>タイトル/説明</th>
+                    <th>魚種/旬</th>
+                    <th>難易度/所要時間</th>
+                    <th>費用/情報</th>
+                    <th>アクション</th>
                 </tr>
             </thead>
             <tbody id="tbody">
                 </tbody>
         </table>
+    </div>
 
-        <div id="detailContainer" class="detail-container hidden">
-            <div class="detail-header">
-                <button id="backToListBtn" class="back-button">← リストに戻る</button>
-                <h2 id="detailTitle"></h2>
-                <div id="detailSubtitle" class="muted"></div>
-                <div id="detailImageContainer" style="text-align: center; margin-bottom: 15px;"></div>
-                <div id="detailMeta" class="meta"></div>
+    <div id="detailContainer" class="view-section" style="display: none;">
+        <button id="backToListBtn" style="margin-bottom: 20px;">← リストに戻る</button>
+
+        <h1 id="detailTitle"></h1>
+        <p id="detailSubtitle" style="color: #4a5568;"></p>
+
+        <div id="detailMeta" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 8px;">
             </div>
-            
-            <div class="detail-grid">
-                <div class="detail-section">
-                    <h3 class="section-title">材料 (Ingredients)</h3>
-                    <div id="detailIngredients"></div>
-                </div>
-                <div class="detail-section" id="propsSection">
-                    <h3 class="section-title">道具 (Props)</h3>
-                    <div id="detailProps"></div>
-                </div>
-                <div class="detail-section">
-                    <h3 class="section-title">下処理・調理法 (Recipe / Pre-Process)</h3>
-                    <div id="detailRecipe"></div>
-                </div>
+
+        <div id="detailImageContainer" style="margin: 20px 0; text-align: center;">
             </div>
-            
-            <div class="detail-section">
-                <h3 class="section-title">メモ (Memo)</h3>
-                <div id="detailMemo"></div>
+
+        <h2>材料</h2>
+        <div id="detailIngredients" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd;">
             </div>
-        </div>
-    </main>
+
+        <section id="propsSection">
+            <h2>道具</h2>
+            <div id="detailProps" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd;">
+                </div>
+        </section>
+
+        <h2>手順</h2>
+        <div id="detailRecipe" style="margin-bottom: 20px;">
+            </div>
+
+        <h2>メモ</h2>
+        <div id="detailMemo" style="padding: 10px; border: 1px dashed #ddd;">
+            </div>
+    </div>
+
+    <div id="recommendContainer" class="view-section" style="display: none;">
+        <button id="backToRecommendBtn" class="back-btn" style="margin-bottom: 20px;">← レシピリストに戻る</button>
+        
+        <h1>おすすめレシピ提案</h1>
+
+        <div id="recommendOptions" style="margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+            </div>
+        
+        <div id="recommendResult" style="margin-top: 30px;">
+            </div>
+    </div>
 </div>
 
-<div id="filterModal" class="modal-overlay">
-    <div class="modal-content">
-        <h2>絞り込み設定</h2>
-        <div id="filterContent">
+<div id="filterModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; display: none;">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90%; overflow-y: auto;">
+        <h2>詳細絞り込みフィルター</h2>
+        
+        <div id="filterContent" style="margin: 20px 0;">
             </div>
-        <div class="modal-footer">
-            <button id="filterClearBtn">フィルター解除</button>
-            <button id="applyFilterBtn" class="primary-button">適用して閉じる</button>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="filterClearBtn" style="background-color: #e53e3e; color: white;">フィルタークリア</button>
+            <button id="applyFilterBtn" style="background-color: #38a169; color: white;">フィルターを適用して閉じる</button>
         </div>
     </div>
 </div>
+
+<button id="reloadBtn" style="position: fixed; bottom: 20px; right: 20px; padding: 10px; z-index: 101;">データを再読み込み</button>
 
 <script>
 /*
