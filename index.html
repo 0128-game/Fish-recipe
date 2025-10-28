@@ -463,216 +463,366 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 </div>
 
 <script>
-(function() {
-    // =========================================================================
-    // 1. 初期変数とダミー定義 (コードの動作に必要な仮の定義)
-    // =========================================================================
+/*
+ * 最終修正版: 魚種フィルターを厳密なAND条件 (b ⊆ a) に変更 ＋ カスタム入力欄対応
+ * ＋ 絞り込みフィルターを「下処理 (pre)」アイテムにも適用
+ */
+
+(function(){
+    const tryPaths = [
+        'docs/recipes.json',
+        './docs/recipes.json',
+        '/recipes.json',
+        './recipes.json'
+    ];
+
+    // ★★★ リスト/フィルター関連の要素 (既存のHTML要素を使用) ★★★
+    const wrap = document.getElementById('wrap');
+    const tbody = document.getElementById('tbody');
+    const qInput = document.getElementById('q');
+    const filterType = document.getElementById('filterType');
+    const sortBy = document.getElementById('sortBy');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const message = document.getElementById('message');
+
+    // ★★★ 新しいフィルターモーダル関連の要素 (HTMLへの追加が必要です) ★★★
+    const filterOpenBtn = document.getElementById('filterOpenBtn'); 
+    const filterModal = document.getElementById('filterModal');     
+    const filterContent = document.getElementById('filterContent'); 
+    const applyFilterBtn = document.getElementById('applyFilterBtn'); 
+    const filterClearBtn = document.getElementById('filterClearBtn'); 
     
-    // グローバルなデータストア
+    // ★★★ 詳細コンテナの要素 ★★★
+    const detailTitle = document.getElementById('detailTitle');
+    const detailSubtitle = document.getElementById('detailSubtitle');
+    const detailImageContainer = document.getElementById('detailImageContainer');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailIngredients = document.getElementById('detailIngredients');
+    const detailRecipe = document.getElementById('detailRecipe');
+    const detailMemo = document.getElementById('detailMemo');
+    const backToListBtn = document.getElementById('backToListBtn');
+    const detailProps = document.getElementById('detailProps');
+    const propsSection = document.getElementById('propsSection');
+
     let rawData = null;
-    let flatList = [];
+    let flatList = []; // merged list with type annotation
+    
+    // フィルタの状態を保持するオブジェクト (魚種はSet、難易度/時間/費用は単一の値)
     let activeFilters = {
-        'fish-name': new Set(),
-        difficulty: null,
-        time: null,
-        cost: null
+        'fish-name': new Set(), // チェックボックス形式 (複数選択)
+        difficulty: null,       // ラジオボタン形式 (単一値)
+        time: null,             // ラジオボタン/入力形式 (単一値)
+        cost: null              // ラジオボタン/入力形式 (単一値)
     };
-
-    // フィルターのオプション（ダミーデータ）
-    const DIFFICULTY_OPTIONS = [1, 3, 5];
-    const TIME_OPTIONS = [10, 30, 60];
-    const TIME_MAX = 120;
+    // 固定オプション
+    const DIFFICULTY_OPTIONS = ['1', '2', '3', '4', '5'];
+    const TIME_OPTIONS = [15, 30, 60]; 
     const COST_OPTIONS = [500, 1000, 2000];
-    const COST_MAX = 5000;
-    const tryPaths = ['/docs/data.json']; // ダミーのデータパス
-
-    // DOM elements (実際にはHTMLでIDを定義する必要があります)
-    const getEl = (id) => document.getElementById(id);
-    const wrap = getEl('wrap');
-    const tbody = getEl('tbody');
-    const qInput = getEl('qInput');
-    const filterType = getEl('filterType');
-    const sortBy = getEl('sortBy');
-    const message = getEl('message');
-    const reloadBtn = getEl('reloadBtn');
-    const backToListBtn = getEl('backToListBtn');
-    const detailTitle = getEl('detailTitle');
-    const detailSubtitle = getEl('detailSubtitle');
-    const detailMeta = getEl('detailMeta');
-    const detailImageContainer = getEl('detailImageContainer');
-    const detailIngredients = getEl('detailIngredients');
-    const detailRecipe = getEl('detailRecipe');
-    const detailMemo = getEl('detailMemo');
-    const propsSection = getEl('propsSection');
-    const detailProps = getEl('detailProps');
-    
-    // フィルターモーダル関連
-    const filterOpenBtn = getEl('filterOpenBtn');
-    const applyFilterBtn = getEl('applyFilterBtn');
-    const filterClearBtn = getEl('filterClearBtn');
-    const filterContent = getEl('filterContent');
-    const filterModal = getEl('filterModal');
-    
-    // ★★★ 料理提案モーダル関連（追加） ★★★
-    const suggestionOpenBtn = getEl('suggestionOpenBtn');
-    const suggestionModal = getEl('suggestionModal');
-    // ★★★ 料理提案モーダル関連（追加） ここまで ★★★
+    const TIME_MAX = 120; // 入力欄の最大値
+    const COST_MAX = 5000; // 入力欄の最大値
 
 
-    // =========================================================================
-    // 2. ユーティリティ関数 (元のコードで使われているが定義がなかったもの)
-    // =========================================================================
-
-    // 配列を結合して文字列にする（null, undefined, 空配列に対応）
-    function joinIfArray(arr) {
-        if (Array.isArray(arr) && arr.length > 0) {
-            return arr.join(', ');
-        }
-        if (typeof arr === 'object' && arr !== null) { // オブジェクトの場合
-            return Object.values(arr).join(', ');
-        }
-        return '';
-    }
-
-    // テキスト要素を作成する（ダミー）
-    function elText(tag, text, className = '') {
+    // Utility: safe text node creation
+    function elText(tag, text, cls){
         const el = document.createElement(tag);
-        el.textContent = text;
-        if (className) el.className = className;
+        if (cls) el.className = cls;
+        el.textContent = (text === undefined || text === null) ? '' : String(text);
         return el;
     }
 
-    // テーブルをクリアする（ダミー）
-    function clearTable() {
-        if (tbody) tbody.innerHTML = '';
-    }
-
-    // データを取得する（ダミー）
-    async function fetchAny(paths) {
-        console.log(`ダミーデータを取得中: ${paths[0]}`);
-        // 実際のデータ構造に合わせてダミーデータを返却
-        return {
-            recipes: {
-                "R01": { No: "R01", _type: "recipe", title: "サバの味噌煮", flavortxt: "定番の煮物", difficulty: 2, time: 25, cost: 800, "fish-name": ["サバ"], season: ["秋", "冬"], ingredients: { "サバ": "2切れ", "味噌": "大さじ3" }, recipe: ["サバを下処理する", "調味料で煮込む"], memo: ["ご飯によく合う"], pictures: ['pic/saba1.jpg', 'pic/saba2.jpg'] },
-            },
-            preparations: {
-                "P01": { No: "P01", _type: "pre", title: "サバの3枚おろし", flavortxt: "下処理の基本", difficulty: 3, time: 15, cost: 0, "fish-name": ["サバ", "イワシ"], season: ["通年"], ingredients: {}, recipe: ["ウロコを取る", "頭を落とす", "3枚におろす"], memo: ["骨に注意"], props: { "包丁": "出刃", "まな板": "大" }, pictures: ['pic/pre1.jpg', 'pic/pre2.jpg'] },
+    // Try fetching from multiple paths in order
+    async function fetchAny(paths){
+        for (const p of paths){
+            try {
+                const res = await fetch(p, {cache: "no-store"});
+                if (!res.ok) continue;
+                const json = await res.json();
+                return json;
+            } catch(e){
+                console.warn('fetch failed for', p, e);
             }
-        };
+        }
+        throw new Error('recipes.json を見つけられませんでした。期待する場所: ' + paths.join(', '));
     }
 
-    // 取得したデータをフラットリストに変換する（ダミー）
-    function buildFlatList(data) {
+    // Normalize and flatten recipes + preparations into an array for table
+    function buildFlatList(data){
         const list = [];
-        if (data.recipes) {
-            Object.values(data.recipes).forEach(item => list.push(item));
+        if (!data || typeof data !== 'object') return list;
+
+        const recipes = data.recipes || {};
+        for (const key of Object.keys(recipes)){
+            const item = Object.assign({}, recipes[key]);
+            item._type = 'recipe';
+            item.No = item.No != null ? String(item.No) : String(key);
+            item._origKey = key;
+            list.push(item);
         }
-        if (data.preparations) {
-            Object.values(data.preparations).forEach(item => list.push(item));
+        const pres = data.preparations || {};
+        for (const key of Object.keys(pres)){
+            const item = Object.assign({}, pres[key]);
+            item._type = 'pre';
+            item.No = item.No != null ? String(item.No) : String(key);
+            item._origKey = key;
+            list.push(item);
         }
         return list;
     }
-    
-    // チェックボックスグループを作成する（ダミー）
-    function createCheckboxGroup(title, key, options, hint) {
-        const container = document.createElement('div');
-        container.innerHTML = `<h4>${title}</h4><small class="muted">${hint}</small>`;
-        options.forEach(val => {
-            const label = document.createElement('label');
-            label.innerHTML = `<input type="checkbox" value="${val}" data-filter-key="${key}"> ${val}`;
-            container.appendChild(label);
-        });
-        return container;
+
+    // safe join array-like fields for display
+    function joinIfArray(val){
+        if (Array.isArray(val)) return val.join(', ');
+        if (val === undefined || val === null) return '';
+        return String(val);
     }
 
-    // ラジオボタン/入力グループを作成する（ダミー）
-    function createRadioGroup(title, key, options, hint, labels, customType, customProps) {
-        const container = document.createElement('div');
-        container.innerHTML = `<h4>${title}</h4><small class="muted">${hint}</small>`;
+    function clearTable(){ 
+        if(tbody) tbody.innerHTML = ''; 
+    }
 
-        // 制限なしオプション
-        let label = document.createElement('label');
-        label.innerHTML = `<input type="radio" name="${key}" value="" data-filter-key="${key}" checked> 制限なし`;
-        container.appendChild(label);
+    /**
+     * チェックボックスグループを生成するヘルパー関数 (魚種用)
+     */
+    function createCheckboxGroup(title, key, values, hintText = '') {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'filter-group';
 
-        // 定義済みオプション
-        options.forEach((val, index) => {
-            label = document.createElement('label');
-            label.innerHTML = `<input type="radio" name="${key}" value="${val}" data-filter-key="${key}"> ${labels[index]}`;
-            container.appendChild(label);
+        const legend = document.createElement('legend');
+        legend.textContent = title;
+        fieldset.appendChild(legend);
+
+        if (hintText) {
+             const hint = elText('p', hintText, 'filter-hint');
+             fieldset.appendChild(hint);
+        }
+
+        values.forEach(value => {
+            const strValue = String(value);
+            const id = `${key}-${strValue.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = id;
+            checkbox.value = strValue;
+            checkbox.dataset.filterKey = key;
+            
+            // activeFiltersに値が含まれていればチェック
+            if (activeFilters[key] && activeFilters[key].has(strValue)) {
+                checkbox.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.textContent = strValue;
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            fieldset.appendChild(div);
         });
+        return fieldset;
+    }
 
-        // カスタム入力オプション
-        if (customType === 'radio-input') {
-            label = document.createElement('label');
-            label.innerHTML = `<input type="radio" name="${key}" value="CUSTOM" data-filter-key="${key}"> カスタム`;
-            container.appendChild(label);
+    /**
+     * ラジオボタングループを生成するヘルパー関数 (難易度/時間/費用用)
+     * @param {string} type - 'radio' or 'radio-input'
+     */
+    function createRadioGroup(title, key, values, hintText = '', labels = null, type = 'radio', inputProps = {}) {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'filter-group';
 
-            const inputContainer = document.createElement('div');
+        const legend = document.createElement('legend');
+        legend.textContent = title;
+        fieldset.appendChild(legend);
+
+        if (hintText) {
+             const hint = elText('p', hintText, 'filter-hint');
+             fieldset.appendChild(hint);
+        }
+        
+        // ----------------- ラジオボタン群 -----------------
+        const radioDiv = document.createElement('div');
+        radioDiv.className = 'radio-options-container';
+
+        // ラジオボタン: 「制限なし」
+        const allRadioDiv = document.createElement('div');
+        allRadioDiv.className = 'filter-item';
+        const allId = `${key}-all`;
+        const allRadio = document.createElement('input');
+        allRadio.type = 'radio';
+        allRadio.id = allId;
+        allRadio.name = key;
+        allRadio.value = ''; // 空文字でフィルター解除を示す
+        allRadio.dataset.filterKey = key;
+        
+        // activeFilters[key]がnullまたは空文字の場合、チェックする
+        if (activeFilters[key] === null || activeFilters[key] === '') {
+            allRadio.checked = true;
+        }
+
+        const allLabel = document.createElement('label');
+        allLabel.htmlFor = allId;
+        allLabel.textContent = '制限なし';
+        allRadioDiv.appendChild(allRadio);
+        allRadioDiv.appendChild(allLabel);
+        radioDiv.appendChild(allRadioDiv);
+
+        // ラジオボタン: 定義済みの値
+        values.forEach((value, index) => {
+            const strValue = String(value);
+            const id = `${key}-${strValue}`;
+            const labelText = labels ? labels[index] : strValue;
+
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.id = id;
+            radio.name = key;
+            radio.value = strValue;
+            radio.dataset.filterKey = key;
+            
+            // activeFilters[key]がこの値の場合、チェックする
+            if (activeFilters[key] === strValue) {
+                radio.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.textContent = labelText;
+
+            div.appendChild(radio);
+            div.appendChild(label);
+            radioDiv.appendChild(div);
+        });
+        
+        // ----------------- カスタムラジオボタン (時間と費用のみ) -----------------
+        let inputContainer = null;
+        if (type === 'radio-input') {
+            
+            // カスタムラジオボタンを追加
+            const customRadioDiv = document.createElement('div');
+            customRadioDiv.className = 'filter-item';
+            const customId = `${key}-custom-radio`;
+            const customRadio = document.createElement('input');
+            customRadio.type = 'radio';
+            customRadio.id = customId;
+            customRadio.name = key;
+            customRadio.value = 'CUSTOM';
+            customRadio.dataset.filterKey = key;
+            
+            // activeFiltersに数字が格納されており、かつそれが定義済みの値でなければ、CUSTOMが選択されている
+            const isCustomSelected = activeFilters[key] !== null && activeFilters[key] !== '' && !values.map(String).includes(activeFilters[key]);
+            if (isCustomSelected) {
+                customRadio.checked = true;
+            }
+            
+            const customLabel = document.createElement('label');
+            customLabel.htmlFor = customId;
+            customLabel.textContent = 'カスタム値を入力';
+            customRadioDiv.appendChild(customRadio);
+            customRadioDiv.appendChild(customLabel);
+            radioDiv.appendChild(customRadioDiv);
+            
+            fieldset.appendChild(radioDiv); // ラジオボタン全てを fieldset に追加
+            
+
+            // ----------------- カスタム入力フィールド -----------------
+            inputContainer = document.createElement('div');
             inputContainer.className = 'filter-input-container';
-            inputContainer.style.display = 'none';
+            inputContainer.style.marginTop = '10px';
+            inputContainer.style.borderTop = '1px dashed #e2e8f0';
+            inputContainer.style.paddingTop = '10px';
+            // CUSTOMが選択されていない場合、非表示にする
+            if (!isCustomSelected) {
+                inputContainer.style.display = 'none';
+            }
+
+            const inputId = `${key}-custom-input`;
+            const labelText = (key === 'time') ? '分' : '円';
+
             const input = document.createElement('input');
             input.type = 'number';
+            input.id = inputId;
+            input.name = `${key}-custom`;
+            input.placeholder = `最大値 (${inputProps.max})`;
+            input.min = inputProps.min || 1;
+            input.max = inputProps.max || 9999;
+            input.style.width = '120px';
+            input.style.padding = '6px 10px';
+            input.style.borderRadius = '6px';
+            input.style.border = '1px solid #d6d8df';
             input.dataset.filterKey = key;
             input.dataset.inputType = 'custom';
-            input.min = customProps.min;
-            input.max = customProps.max;
-            input.placeholder = `最大${title.includes('時間') ? '分' : '円'}`;
+
+            if (isCustomSelected) {
+                input.value = activeFilters[key];
+            }
+            
+            const label = document.createElement('label');
+            label.htmlFor = inputId;
+            label.textContent = `以下の最大値を設定 (${labelText}以下): `;
+            label.style.fontWeight = 'normal';
+            label.style.marginRight = '5px';
+
+            inputContainer.appendChild(label);
             inputContainer.appendChild(input);
-            container.appendChild(inputContainer);
+            fieldset.appendChild(inputContainer);
+        } else {
+            fieldset.appendChild(radioDiv); // radioタイプの場合は、ここで追加
         }
-        return container;
+
+        return fieldset;
     }
 
-
-    // =========================================================================
-    // 3. 関数定義 (提供されたコードの配置)
-    // =========================================================================
 
     /**
      * フィルターモーダルの設定とチェックボックス/ラジオボタンの生成
      * @param {Array} list - flatList
      */
-     function setupFilterModal(list){
-         if (!filterContent) return; 
+    function setupFilterModal(list){
+        if (!filterContent) return; 
 
-         filterContent.innerHTML = '';
-         const fragment = document.createDocumentFragment();
+        filterContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
 
-         // 1. 魚種フィルター (fish-name) - チェックボックス（複数選択）
-         const fishSet = new Set();
-         list.forEach(item => {
-             if (Array.isArray(item['fish-name'])) { // pre/recipe 両方から魚種名を収集
-                 item['fish-name'].forEach(fish => {
-                     const trimmedFish = fish.trim();
-                     if (trimmedFish) fishSet.add(trimmedFish);
-                 });
-             }
-         });
-         const uniqueFish = Array.from(fishSet).sort();
-         // ユーザーにAND条件であることを示すヒントテキスト
-         fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, 'レシピ/下処理に使う魚が、選択した魚種のすべてに含まれるものを表示 (b ⊆ a)'));
+        // 1. 魚種フィルター (fish-name) - チェックボックス（複数選択）
+        const fishSet = new Set();
+        list.forEach(item => {
+            if (Array.isArray(item['fish-name'])) { // pre/recipe 両方から魚種名を収集
+                item['fish-name'].forEach(fish => {
+                    const trimmedFish = fish.trim();
+                    if (trimmedFish) fishSet.add(trimmedFish);
+                });
+            }
+        });
+        const uniqueFish = Array.from(fishSet).sort();
+        // ユーザーにAND条件であることを示すヒントテキスト
+        fragment.appendChild(createCheckboxGroup('魚種', 'fish-name', uniqueFish, 'レシピ/下処理に使う魚が、選択した魚種のすべてに含まれるものを表示 (b ⊆ a)'));
 
-         // 2. 難易度フィルター (difficulty) - ラジオボタン（単一選択）
-         fragment.appendChild(createRadioGroup('難易度 (最大)', 'difficulty', DIFFICULTY_OPTIONS, '選択した難易度以下のアイテムを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
+        // 2. 難易度フィルター (difficulty) - ラジオボタン（単一選択）
+        fragment.appendChild(createRadioGroup('難易度 (最大)', 'difficulty', DIFFICULTY_OPTIONS, '選択した難易度以下のアイテムを表示', DIFFICULTY_OPTIONS.map(d => `難易度 ${d} 以下`)));
 
-         // 3. 所要時間フィルター (time) - ラジオボタン＋カスタム入力欄
-         fragment.appendChild(createRadioGroup('所要時間 (分・最大)', 'time', TIME_OPTIONS, '選択肢またはカスタム入力で指定した時間以下のアイテムを表示', TIME_OPTIONS.map(t => `${t}分以内`), 'radio-input', {min: 1, max: TIME_MAX}));
+        // 3. 所要時間フィルター (time) - ラジオボタン＋カスタム入力欄
+        fragment.appendChild(createRadioGroup('所要時間 (分・最大)', 'time', TIME_OPTIONS, '選択肢またはカスタム入力で指定した時間以下のアイテムを表示', TIME_OPTIONS.map(t => `${t}分以内`), 'radio-input', {min: 1, max: TIME_MAX}));
 
-         // 4. 費用フィルター (cost) - ラジオボタン＋カスタム入力欄
-         fragment.appendChild(createRadioGroup('費用 (円・最大)', 'cost', COST_OPTIONS, '選択肢またはカスタム入力で指定した費用以下のアイテムを表示', COST_OPTIONS.map(c => `¥${c}以下`), 'radio-input', {min: 100, max: COST_MAX}));
+        // 4. 費用フィルター (cost) - ラジオボタン＋カスタム入力欄
+        fragment.appendChild(createRadioGroup('費用 (円・最大)', 'cost', COST_OPTIONS, '選択肢またはカスタム入力で指定した費用以下のアイテムを表示', COST_OPTIONS.map(c => `¥${c}以下`), 'radio-input', {min: 100, max: COST_MAX}));
 
-         filterContent.appendChild(fragment);
+        filterContent.appendChild(fragment);
 
-         // イベントリスナーの再設定
-         filterContent.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-             checkbox.addEventListener('change', updateActiveFilters);
-         });
-         filterContent.querySelectorAll('input[type="radio"], input[type="number"]').forEach(input => {
-             input.addEventListener('change', handleRadioInputChange);
-             input.addEventListener('input', handleRadioInputChange);
-         });
-     }
+        // イベントリスナーの再設定
+        filterContent.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateActiveFilters);
+        });
+        filterContent.querySelectorAll('input[type="radio"], input[type="number"]').forEach(input => {
+            input.addEventListener('change', handleRadioInputChange);
+            input.addEventListener('input', handleRadioInputChange);
+        });
+    }
 
     /**
      * ラジオボタン/入力欄の変更を処理し、入力欄の表示/非表示を制御する
@@ -1043,8 +1193,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             });
         }
 
-        // 3. フィルターロジックの適用
+        // ★★★ 3. フィルターロジックの適用 (下処理アイテムにも適用) ★★★
         list = list.filter(item => {
+            // NOTE: item._type === 'pre' のスキップ処理を削除したため、
+            // 下処理アイテムにも魚種、難易度、時間、費用のフィルターが適用される。
+
             // --- 魚種フィルター (fish-name) - AND条件 (b ⊆ a) ---
             const activeFish = activeFilters['fish-name']; // a: ユーザーが選択した魚種リスト (Set)
             if (activeFish.size > 0) {
@@ -1054,6 +1207,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
                 // b ⊆ a のチェック: レシピ/下処理で使われている魚 (b) すべてが、ユーザーの選択肢 (a) に含まれているか？
                 const allMatch = itemFish.every(f => activeFish.has(f));
                 
+                // itemFishが空の配列の場合 (魚種が定義されていないアイテム)、every()はtrueを返すため通過
                 if (!allMatch) return false;
             }
 
@@ -1080,6 +1234,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
             return true;
         });
+        // ★★★ フィルタリングロジックの適用 ここまで ★★★
+
 
         // 4. ソート (Sort)
         const desc = sortVal.startsWith('-');
@@ -1124,10 +1280,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         message.textContent = `${list.length} 件の結果を表示中 (全 ${flatList.length} 件)${filterText}`;
     }
-
-    // =========================================================================
-    // 4. イベントリスナーと初期化
-    // =========================================================================
 
     // reload button
     if(reloadBtn) {
@@ -1182,10 +1334,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         filterClearBtn.addEventListener('click', () => {
              // 全てのフィルターをクリア
              activeFilters = {
-                 'fish-name': new Set(),
-                 difficulty: null,
-                 time: null,
-                 cost: null
+                'fish-name': new Set(),
+                difficulty: null,
+                time: null,
+                cost: null
              };
              // UIをリセットするために再度セットアップ
              setupFilterModal(flatList); 
@@ -1193,25 +1345,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
     }
     // ★★★ フィルターモーダル関連のイベントリスナー ここまで ★★★
-
-    
-    // ★★★ 料理提案モーダル関連のイベントリスナー (追記) ★★★
-    if (suggestionOpenBtn) {
-        suggestionOpenBtn.addEventListener('click', () => {
-             console.log("料理提案ボタンが押されました。");
-             if (suggestionModal) suggestionModal.style.display = 'flex'; // flexでモーダルを表示
-        });
-        
-        // モーダルのオーバーレイをクリックで閉じる (簡易的なもの)
-        if (suggestionModal) {
-            suggestionModal.addEventListener('click', (e) => {
-                if (e.target === suggestionModal) {
-                    suggestionModal.style.display = 'none';
-                }
-            });
-        }
-    }
-    // ★★★ 料理提案モーダル関連のイベントリスナー ここまで ★★★
 
 
     // main loader
