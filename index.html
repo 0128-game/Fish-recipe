@@ -1549,7 +1549,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   let p = 1;
   let currentCount = 1;
 
-  // ✅ 修正版（魚リスト生成＋指定しないでデータ消去対応）
+  // ✅ 魚リスト生成＋指定しないで削除
   proposeBtn.addEventListener('click', async () => {
     proposeModal.style.display = 'flex';
 
@@ -1606,8 +1606,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           if (e.target.value === "specify") {
             includeFishContainer.style.display = "block";
             renderFishCheckboxes();
-          } else {
-            includeFishContainer.innerHTML = "";  // ✅ データ削除
+          }
+          if (e.target.value === "none") {
+            includeFishContainer.innerHTML = "";   // ✅ 「指定しない」にしたとき削除
             includeFishContainer.style.display = "none";
           }
         });
@@ -1619,8 +1620,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           if (e.target.value === "specify") {
             excludeFishContainer.style.display = "block";
             renderFishCheckboxes();
-          } else {
-            excludeFishContainer.innerHTML = "";  // ✅ データ削除
+          }
+          if (e.target.value === "none") {
+            excludeFishContainer.innerHTML = "";   // ✅ 「指定しない」にしたとき削除
             excludeFishContainer.style.display = "none";
           }
         });
@@ -1631,7 +1633,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
   });
 
-  // --- モーダル閉じる処理 ---
+  // --- モーダル閉じる ---
   closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
   proposeModal.addEventListener('click', e => { if(e.target === proposeModal) proposeModal.style.display = 'none'; });
 
@@ -1652,7 +1654,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   leftBtn.addEventListener('click', () => { if (currentCount > 1) currentCount--; counterValue.textContent = currentCount; });
   rightBtn.addEventListener('click', () => { if (currentCount < p) currentCount++; counterValue.textContent = currentCount; });
 
-  // --- 難易度・時間・費用のカスタム欄表示 ---
+  // --- カスタム欄表示 ---
   diffRadios.forEach(r => r.addEventListener('change', () => diffContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
