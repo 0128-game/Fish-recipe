@@ -367,6 +367,44 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         padding-right: 0;
     }
 }
+
+#proposeOpenBtn {
+  background: #38b2ac;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 9px 14px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+#proposeOpenBtn:hover { background: #2c7a7b; }
+
+#proposeModal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+}
+#proposeModal .modal-content {
+  background: #fff;
+  padding: 25px;
+  border-radius: 10px;
+  width: 95%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.propose-group { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fafcff; }
+.counter { display:flex; align-items:center; justify-content:center; gap:15px; }
+.counter button { background: var(--accent); color:white; border:none; border-radius:6px; font-size:1.2rem; width:35px; height:35px; cursor:pointer; }
+.counter span { font-size:1.4rem; font-weight:bold; min-width:40px; text-align:center; display:inline-block; }
+.close-propose { background:none; border:none; color:#666; font-size:1.8rem; float:right; cursor:pointer; }
+
+    
 </style>
 
 <div class="wrap" id="wrap">
@@ -382,6 +420,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             </select>
             
             <button id="filterOpenBtn">絞り込み設定</button> 
+           <button id="proposeOpenBtn">レシピ提案</button>
             
             <select id="sortBy">
                 <option value="No" selected>No順 (昇順)</option>
@@ -460,6 +499,98 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             <button id="applyFilterBtn" class="primary-button">適用して閉じる</button>
         </div>
     </div>
+  <!-- ▼追加：レシピ提案モーダル -->
+<div id="proposeModal">
+  <div class="modal-content">
+    <button class="close-propose" id="closeProposeBtn">&times;</button>
+    <h2>レシピ提案</h2>
+
+    <!-- 食数選択 -->
+    <fieldset class="propose-group">
+      <legend>食数選択</legend>
+      <label><input type="radio" name="meals" value="1" checked> 1食</label>
+      <label><input type="radio" name="meals" value="3"> 1日(3食)</label>
+      <label><input type="radio" name="meals" value="9"> 3日(9食)</label>
+      <label><input type="radio" name="meals" value="custom"> カスタム</label>
+      <div id="customMealInputContainer" style="margin-top:10px;display:none;">
+        <input type="number" id="customMealInput" placeholder="食数を入力" min="1" max="99">
+      </div>
+    </fieldset>
+
+    <!-- 設定方法選択 -->
+    <fieldset class="propose-group">
+      <legend>設定方法選択</legend>
+      <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
+      <label><input type="radio" name="mode" value="each"> 個別設定</label>
+    </fieldset>
+
+    <!-- 食数表示窓 -->
+    <fieldset class="propose-group" id="counterContainer" style="display:none;">
+      <legend>食数表示窓</legend>
+      <div class="counter">
+        <button id="leftBtn">←</button>
+        <span id="counterValue">1</span>
+        <button id="rightBtn">→</button>
+      </div>
+    </fieldset>
+
+    <!-- 使いたい魚選択欄 -->
+    <fieldset class="propose-group">
+      <legend>使いたい魚選択</legend>
+      <label><input type="radio" name="includeFishMode" value="none" checked> 指定しない</label>
+      <label><input type="radio" name="includeFishMode" value="specify"> 指定する</label>
+      <div id="includeFishContainer" style="margin-top:10px;display:none;"></div>
+    </fieldset>
+
+    <!-- 除外する魚選択欄 -->
+    <fieldset class="propose-group">
+      <legend>除外する魚選択</legend>
+      <label><input type="radio" name="excludeFishMode" value="none" checked> 指定しない</label>
+      <label><input type="radio" name="excludeFishMode" value="specify"> 指定する</label>
+      <div id="excludeFishContainer" style="margin-top:10px;display:none;"></div>
+    </fieldset>
+
+    <!-- 難易度 -->
+    <fieldset class="propose-group">
+      <legend>難易度選択</legend>
+      <label><input type="radio" name="difficulty" value=""> 制限なし</label>
+      <label><input type="radio" name="difficulty" value="1"> 1以下</label>
+      <label><input type="radio" name="difficulty" value="2"> 2以下</label>
+      <label><input type="radio" name="difficulty" value="3"> 3以下</label>
+      <label><input type="radio" name="difficulty" value="custom"> カスタム</label>
+      <div id="customDiffInputContainer" style="margin-top:10px;display:none;">
+        <input type="number" id="customDiffInput" min="1" max="5" placeholder="最大難易度">
+      </div>
+    </fieldset>
+
+    <!-- 時間 -->
+    <fieldset class="propose-group">
+      <legend>時間選択 (分)</legend>
+      <label><input type="radio" name="time" value=""> 制限なし</label>
+      <label><input type="radio" name="time" value="15"> 15分以内</label>
+      <label><input type="radio" name="time" value="30"> 30分以内</label>
+      <label><input type="radio" name="time" value="60"> 60分以内</label>
+      <label><input type="radio" name="time" value="custom"> カスタム</label>
+      <div id="customTimeInputContainer" style="margin-top:10px;display:none;">
+        <input type="number" id="customTimeInput" min="1" max="120" placeholder="最大時間">
+      </div>
+    </fieldset>
+
+    <!-- 費用 -->
+    <fieldset class="propose-group">
+      <legend>費用選択 (円)</legend>
+      <label><input type="radio" name="cost" value=""> 制限なし</label>
+      <label><input type="radio" name="cost" value="500"> ¥500以下</label>
+      <label><input type="radio" name="cost" value="1000"> ¥1000以下</label>
+      <label><input type="radio" name="cost" value="2000"> ¥2000以下</label>
+      <label><input type="radio" name="cost" value="custom"> カスタム</label>
+      <div id="customCostInputContainer" style="margin-top:10px;display:none;">
+        <input type="number" id="customCostInput" min="100" max="5000" placeholder="最大費用">
+      </div>
+    </fieldset>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -1386,6 +1517,61 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         activeFilters: activeFilters 
     };
 })();
+
+// ===== レシピ提案モーダル制御 =====
+(function(){
+  const proposeBtn = document.getElementById('proposeOpenBtn');
+  const proposeModal = document.getElementById('proposeModal');
+  const closeProposeBtn = document.getElementById('closeProposeBtn');
+
+  const mealRadios = document.querySelectorAll('input[name="meals"]');
+  const customMealInputContainer = document.getElementById('customMealInputContainer');
+  const modeRadios = document.querySelectorAll('input[name="mode"]');
+  const counterContainer = document.getElementById('counterContainer');
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+  const counterValue = document.getElementById('counterValue');
+
+  const includeFishMode = document.getElementsByName('includeFishMode');
+  const excludeFishMode = document.getElementsByName('excludeFishMode');
+  const includeFishContainer = document.getElementById('includeFishContainer');
+  const excludeFishContainer = document.getElementById('excludeFishContainer');
+
+  const diffRadios = document.querySelectorAll('input[name="difficulty"]');
+  const diffContainer = document.getElementById('customDiffInputContainer');
+  const timeRadios = document.querySelectorAll('input[name="time"]');
+  const timeContainer = document.getElementById('customTimeInputContainer');
+  const costRadios = document.querySelectorAll('input[name="cost"]');
+  const costContainer = document.getElementById('customCostInputContainer');
+
+  let p = 1;
+  let currentCount = 1;
+
+  proposeBtn.addEventListener('click', () => proposeModal.style.display = 'flex');
+  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
+  proposeModal.addEventListener('click', e => { if(e.target===proposeModal) proposeModal.style.display='none'; });
+
+  mealRadios.forEach(r => r.addEventListener('change', ()=>{
+    if(r.value==='custom') customMealInputContainer.style.display='block';
+    else customMealInputContainer.style.display='none';
+    p = (r.value==='custom') ? Number(document.getElementById('customMealInput').value||1) : Number(r.value);
+  }));
+  document.getElementById('customMealInput').addEventListener('input', e=>{ p = Number(e.target.value||1); });
+
+  modeRadios.forEach(r => r.addEventListener('change', ()=>{
+    counterContainer.style.display = (r.value==='each') ? 'block' : 'none';
+  }));
+  leftBtn.addEventListener('click', ()=>{ if(currentCount>1) currentCount--; counterValue.textContent=currentCount; });
+  rightBtn.addEventListener('click', ()=>{ if(currentCount<p) currentCount++; counterValue.textContent=currentCount; });
+
+  includeFishMode.forEach(r => r.addEventListener('change', ()=> includeFishContainer.style.display = (r.value==='specify')?'block':'none'));
+  excludeFishMode.forEach(r => r.addEventListener('change', ()=> excludeFishContainer.style.display = (r.value==='specify')?'block':'none'));
+
+  diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
+  timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
+  costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
+})();
+
 </script>
 </body>
 </html>
