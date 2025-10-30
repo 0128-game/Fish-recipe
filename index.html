@@ -1546,93 +1546,116 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const costRadios = document.querySelectorAll('input[name="cost"]');
   const costContainer = document.getElementById('customCostInputContainer');
 
-let p = 1;
-let currentCount = 1;
+  let p = 1;
+  let currentCount = 1;
 
-// ✅ 修正版（魚リスト生成付き）
-proposeBtn.addEventListener('click', async () => {
-  proposeModal.style.display = 'flex';
+  // ✅ 修正版（魚リスト生成＋指定しないでデータ消去対応）
+  proposeBtn.addEventListener('click', async () => {
+    proposeModal.style.display = 'flex';
 
-  try {
-    const res = await fetch("./docs/recipes.json");
-    const json = await res.json();
+    try {
+      const res = await fetch("./docs/recipes.json");
+      const json = await res.json();
 
-    const fishSet = new Set();
-    // recipes と preparations の両方から魚名を収集
-    for (const cat of ["recipes", "preparations"]) {
-      const group = json[cat];
-      if (!group) continue;
-      for (const key in group) {
-        const entry = group[key];
-        if (Array.isArray(entry["fish-name"])) {
-          entry["fish-name"].forEach(f => fishSet.add(f));
+      const fishSet = new Set();
+      for (const cat of ["recipes", "preparations"]) {
+        const group = json[cat];
+        if (!group) continue;
+        for (const key in group) {
+          const entry = group[key];
+          if (Array.isArray(entry["fish-name"])) {
+            entry["fish-name"].forEach(f => fishSet.add(f));
+          }
         }
       }
+      const fishList = Array.from(fishSet).sort();
+
+      // --- 魚チェックボックス描画関数 ---
+      function renderFishCheckboxes() {
+        includeFishContainer.innerHTML = "";
+        excludeFishContainer.innerHTML = "";
+
+        fishList.forEach(f => {
+          const inc = document.createElement("label");
+          inc.innerHTML = `<input type="checkbox" class="includeFish" value="${f}"> ${f}`;
+          includeFishContainer.appendChild(inc);
+
+          const exc = document.createElement("label");
+          exc.innerHTML = `<input type="checkbox" class="excludeFish" value="${f}"> ${f}`;
+          excludeFishContainer.appendChild(exc);
+        });
+
+        // 相互disable
+        const includeBoxes = document.querySelectorAll(".includeFish");
+        const excludeBoxes = document.querySelectorAll(".excludeFish");
+        includeBoxes.forEach((incBox, i) => {
+          incBox.addEventListener("change", () => {
+            excludeBoxes[i].disabled = incBox.checked;
+          });
+        });
+        excludeBoxes.forEach((excBox, i) => {
+          excBox.addEventListener("change", () => {
+            includeBoxes[i].disabled = excBox.checked;
+          });
+        });
+      }
+
+      // --- 「使いたい魚」欄の表示切替 ---
+      document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
+        radio.addEventListener("change", e => {
+          if (e.target.value === "specify") {
+            includeFishContainer.style.display = "block";
+            renderFishCheckboxes();
+          } else {
+            includeFishContainer.innerHTML = "";  // ✅ データ削除
+            includeFishContainer.style.display = "none";
+          }
+        });
+      });
+
+      // --- 「除外する魚」欄の表示切替 ---
+      document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
+        radio.addEventListener("change", e => {
+          if (e.target.value === "specify") {
+            excludeFishContainer.style.display = "block";
+            renderFishCheckboxes();
+          } else {
+            excludeFishContainer.innerHTML = "";  // ✅ データ削除
+            excludeFishContainer.style.display = "none";
+          }
+        });
+      });
+
+    } catch (e) {
+      console.error("魚リスト生成中にエラー:", e);
     }
+  });
 
-    const fishList = Array.from(fishSet).sort();
+  // --- モーダル閉じる処理 ---
+  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
+  proposeModal.addEventListener('click', e => { if(e.target === proposeModal) proposeModal.style.display = 'none'; });
 
-    // --- コンテナを初期化 ---
-    includeFishContainer.innerHTML = "";
-    excludeFishContainer.innerHTML = "";
-
-    // --- include用 ---
-    fishList.forEach(f => {
-      const label = document.createElement("label");
-      label.innerHTML = `<input type="checkbox" class="includeFish" value="${f}"> ${f}`;
-      includeFishContainer.appendChild(label);
-    });
-
-    // --- exclude用 ---
-    fishList.forEach(f => {
-      const label = document.createElement("label");
-      label.innerHTML = `<input type="checkbox" class="excludeFish" value="${f}"> ${f}`;
-      excludeFishContainer.appendChild(label);
-    });
-
-    // --- 同じ魚を両方で選べないように制御 ---
-    const includeBoxes = document.querySelectorAll(".includeFish");
-    const excludeBoxes = document.querySelectorAll(".excludeFish");
-
-    includeBoxes.forEach((incBox, i) => {
-      incBox.addEventListener("change", () => {
-        excludeBoxes[i].disabled = incBox.checked;
-      });
-    });
-    excludeBoxes.forEach((excBox, i) => {
-      excBox.addEventListener("change", () => {
-        includeBoxes[i].disabled = excBox.checked;
-      });
-    });
-
-  } catch (e) {
-    console.error("魚リスト生成中にエラー:", e);
-  }
-});
-
-closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
-proposeModal.addEventListener('click', e => { if(e.target===proposeModal) proposeModal.style.display='none'; });
-
-
-  mealRadios.forEach(r => r.addEventListener('change', ()=>{
-    if(r.value==='custom') customMealInputContainer.style.display='block';
-    else customMealInputContainer.style.display='none';
-    p = (r.value==='custom') ? Number(document.getElementById('customMealInput').value||1) : Number(r.value);
+  // --- 食数設定 ---
+  mealRadios.forEach(r => r.addEventListener('change', () => {
+    if (r.value === 'custom') customMealInputContainer.style.display = 'block';
+    else customMealInputContainer.style.display = 'none';
+    p = (r.value === 'custom') ? Number(document.getElementById('customMealInput').value || 1) : Number(r.value);
   }));
-  document.getElementById('customMealInput').addEventListener('input', e=>{ p = Number(e.target.value||1); });
+  document.getElementById('customMealInput').addEventListener('input', e => { p = Number(e.target.value || 1); });
 
-  modeRadios.forEach(r => r.addEventListener('change', ()=>{
-    counterContainer.style.display = (r.value==='each') ? 'block' : 'none';
+  // --- 設定方法選択 ---
+  modeRadios.forEach(r => r.addEventListener('change', () => {
+    counterContainer.style.display = (r.value === 'each') ? 'block' : 'none';
   }));
-  leftBtn.addEventListener('click', ()=>{ if(currentCount>1) currentCount--; counterValue.textContent=currentCount; });
-  rightBtn.addEventListener('click', ()=>{ if(currentCount<p) currentCount++; counterValue.textContent=currentCount; });
 
-  includeFishMode.forEach(r => r.addEventListener('change', ()=> includeFishContainer.style.display = (r.value==='specify')?'block':'none'));
-  excludeFishMode.forEach(r => r.addEventListener('change', ()=> excludeFishContainer.style.display = (r.value==='specify')?'block':'none'));
+  // --- カウンター ---
+  leftBtn.addEventListener('click', () => { if (currentCount > 1) currentCount--; counterValue.textContent = currentCount; });
+  rightBtn.addEventListener('click', () => { if (currentCount < p) currentCount++; counterValue.textContent = currentCount; });
 
-  diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
-  timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
-  costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
+  // --- 難易度・時間・費用のカスタム欄表示 ---
+  diffRadios.forEach(r => r.addEventListener('change', () => diffContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
+  timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
+  costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
 })();
 
 </script>
