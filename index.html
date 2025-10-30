@@ -1549,7 +1549,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   let p = 1;
   let currentCount = 1;
 
-  // ✅ 魚リスト生成＋指定しないで削除
+  // ✅ 魚リスト生成＋disable解除対応
   proposeBtn.addEventListener('click', async () => {
     proposeModal.style.display = 'flex';
 
@@ -1585,9 +1585,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           excludeFishContainer.appendChild(exc);
         });
 
-        // 相互disable
+        // 相互disable制御
         const includeBoxes = document.querySelectorAll(".includeFish");
         const excludeBoxes = document.querySelectorAll(".excludeFish");
+
         includeBoxes.forEach((incBox, i) => {
           incBox.addEventListener("change", () => {
             excludeBoxes[i].disabled = incBox.checked;
@@ -1600,30 +1601,40 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
       }
 
-      // --- 「使いたい魚」欄の表示切替 ---
+      // 初期描画はしない（指定するを選んだ時のみ描画）
+      includeFishContainer.innerHTML = "";
+      excludeFishContainer.innerHTML = "";
+
+      // --- 「使いたい魚」欄 ---
       document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
+          const excludeBoxes = document.querySelectorAll(".excludeFish");
           if (e.target.value === "specify") {
             includeFishContainer.style.display = "block";
             renderFishCheckboxes();
           }
           if (e.target.value === "none") {
-            includeFishContainer.innerHTML = "";   // ✅ 「指定しない」にしたとき削除
+            // ✅ disable解除も含む完全リセット
+            includeFishContainer.innerHTML = "";
             includeFishContainer.style.display = "none";
+            excludeBoxes.forEach(b => b.disabled = false);
           }
         });
       });
 
-      // --- 「除外する魚」欄の表示切替 ---
+      // --- 「除外する魚」欄 ---
       document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
+          const includeBoxes = document.querySelectorAll(".includeFish");
           if (e.target.value === "specify") {
             excludeFishContainer.style.display = "block";
             renderFishCheckboxes();
           }
           if (e.target.value === "none") {
-            excludeFishContainer.innerHTML = "";   // ✅ 「指定しない」にしたとき削除
+            // ✅ disable解除も含む完全リセット
+            excludeFishContainer.innerHTML = "";
             excludeFishContainer.style.display = "none";
+            includeBoxes.forEach(b => b.disabled = false);
           }
         });
       });
