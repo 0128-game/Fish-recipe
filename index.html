@@ -1550,77 +1550,155 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   let currentCount = 1;
 
   // ✅ 魚リスト生成＋disable解除対応
-  proposeBtn.addEventListener('click', async () => {
-    proposeModal.style.display = 'flex';
+  proposeBtn.addEventListener('click', async () => {// === 変更用コード（proposeBtn handler をこの内容に置き換える） ===
+// ※ 上部で let p = 1; let currentCount = 1; が既に宣言されている想定です。
 
-    try {
-      const res = await fetch("./docs/recipes.json");
-      const json = await res.json();
+// 状態を保持するセット（チェック状態の永続化用）
+let selectedInclude = new Set();
+let selectedExclude = new Set();
 
-      const fishSet = new Set();
-      for (const cat of ["recipes", "preparations"]) {
-        const group = json[cat];
-        if (!group) continue;
-        for (const key in group) {
-          const entry = group[key];
-          if (Array.isArray(entry["fish-name"])) {
-            entry["fish-name"].forEach(f => fishSet.add(f));
-          }
+proposeBtn.addEventListener('click', async () => {
+  proposeModal.style.display = 'flex';
+
+  try {
+    const res = await fetch("./docs/recipes.json");
+    const json = await res.json();
+
+    const fishSet = new Set();
+    for (const cat of ["recipes", "preparations"]) {
+      const group = json[cat];
+      if (!group) continue;
+      for (const key in group) {
+        const entry = group[key];
+        if (Array.isArray(entry["fish-name"])) {
+          entry["fish-name"].forEach(f => fishSet.add(f));
         }
       }
-      const fishList = Array.from(fishSet).sort();
+    }
+    const fishList = Array.from(fishSet).sort();
 
-      // --- 魚チェックボックス描画関数 ---
-      function renderFishCheckboxes() {
-        includeFishContainer.innerHTML = "";
-        excludeFishContainer.innerHTML = "";
-
-        fishList.forEach(f => {
-          const inc = document.createElement("label");
-          inc.innerHTML = `<input type="checkbox" class="includeFish" value="${f}"> ${f}`;
-          includeFishContainer.appendChild(inc);
-
-          const exc = document.createElement("label");
-          exc.innerHTML = `<input type="checkbox" class="excludeFish" value="${f}"> ${f}`;
-          excludeFishContainer.appendChild(exc);
-        });
-
-        // 相互disable制御
-        const includeBoxes = document.querySelectorAll(".includeFish");
-        const excludeBoxes = document.querySelectorAll(".excludeFish");
-
-        includeBoxes.forEach((incBox, i) => {
-          incBox.addEventListener("change", () => {
-            excludeBoxes[i].disabled = incBox.checked;
-          });
-        });
-        excludeBoxes.forEach((excBox, i) => {
-          excBox.addEventListener("change", () => {
-            includeBoxes[i].disabled = excBox.checked;
-          });
-        });
-      }
-
-      // 初期描画はしない（指定するを選んだ時のみ描画）
+    // --- 魚チェックボックス描画関数（チェック状態は selectedInclude/selectedExclude から復元） ---
+    function renderFishCheckboxes() {
+      // 既存要素を消して作り直すが、チェック状態はセットから復元する
       includeFishContainer.innerHTML = "";
       excludeFishContainer.innerHTML = "";
 
-      // --- 「使いたい魚」欄 ---
-      document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
-        radio.addEventListener("change", e => {
-          const excludeBoxes = document.querySelectorAll(".excludeFish");
-          if (e.target.value === "specify") {
-            includeFishContainer.style.display = "block";
-            renderFishCheckboxes();
-          }
-          if (e.target.value === "none") {
-            // ✅ disable解除も含む完全リセット
-            includeFishContainer.innerHTML = "";
-            includeFishContainer.style.display = "none";
-            excludeBoxes.forEach(b => b.disabled = false);
+      fishList.forEach((f, idx) => {
+        // include
+        const incLabel = document.createElement("label");
+        const incInput = document.createElement("input");
+        incInput.type = "checkbox";
+        incInput.className = "includeFish";
+        incInput.value = f;
+        if (selectedInclude.has(f)) incInput.checked = true;
+        incLabel.appendChild(incInput);
+        incLabel.appendChild(document.createTextNode(" " + f));
+        includeFishContainer.appendChild(incLabel);
+
+        // exclude
+        const excLabel = document.createElement("label");
+        const excInput = document.createElement("input");
+        excInput.type = "checkbox";
+        excInput.className = "excludeFish";
+        excInput.value = f;
+        if (selectedExclude.has(f)) excInput.checked = true;
+        excLabel.appendChild(excInput);
+        excLabel.appendChild(document.createTextNode(" " + f));
+        excludeFishContainer.appendChild(excLabel);
+      });
+
+      // 相互disable と 状態更新イベントを設定
+      const includeBoxes = Array.from(document.querySelectorAll(".includeFish"));
+      const excludeBoxes = Array.from(document.querySelectorAll(".excludeFish"));
+
+      includeBoxes.forEach((incBox, i) => {
+        // 初期disabled状態（excludeにチェックがあればdisable）
+        incBox.disabled = !!excludeBoxes[i].checked;
+
+        // 変更時は selectedInclude に保存し、excludeをdisabledにする
+        incBox.addEventListener("change", () => {
+          if (incBox.checked) selectedInclude.add(incBox.value);
+          else selectedInclude.delete(incBox.value);
+
+          // exclude を無効化 or 有効化
+          excludeBoxes[i].disabled = incBox.checked;
+          // もし両方チェックの矛盾が発生していたら（念のため）excludeのチェックを外す
+          if (incBox.checked && excludeBoxes[i].checked) {
+            excludeBoxes[i].checked = false;
+            selectedExclude.delete(excludeBoxes[i].value);
           }
         });
       });
+
+      excludeBoxes.forEach((excBox, i) => {
+        // 初期disabled状態（includeにチェックがあればdisable）
+        excBox.disabled = !!includeBoxes[i].checked;
+
+        // 変更時は selectedExclude に保存し、includeをdisabledにする
+        excBox.addEventListener("change", () => {
+          if (excBox.checked) selectedExclude.add(excBox.value);
+          else selectedExclude.delete(excBox.value);
+
+          includeBoxes[i].disabled = excBox.checked;
+          if (excBox.checked && includeBoxes[i].checked) {
+            includeBoxes[i].checked = false;
+            selectedInclude.delete(includeBoxes[i].value);
+          }
+        });
+      });
+    }
+
+    // --- 表示切替のロジック ---
+    // 使いたい魚ラジオ：'specify' 時は描画（既に selectedExclude が保持されているならそのまま反映される）
+    document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
+      radio.addEventListener("change", e => {
+        if (e.target.value === "specify") {
+          includeFishContainer.style.display = "block";
+          // 既にチェック済み状態があればそれを復元して描画
+          renderFishCheckboxes();
+        } else {
+          // 指定しないにするときは include の選択のみクリア（exclude側の状態は保持）
+          includeFishContainer.innerHTML = "";
+          includeFishContainer.style.display = "none";
+          selectedInclude.clear();
+          // exclude側の disabled は解除しておく（選択は保持）
+          document.querySelectorAll(".excludeFish").forEach(b => b.disabled = false);
+        }
+      });
+    });
+
+    // 除外ラジオ：'specify' 時は描画、'none' 時は除外の選択をクリア（includeの状態は保持）
+    document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
+      radio.addEventListener("change", e => {
+        if (e.target.value === "specify") {
+          excludeFishContainer.style.display = "block";
+          renderFishCheckboxes();
+        } else {
+          excludeFishContainer.innerHTML = "";
+          excludeFishContainer.style.display = "none";
+          selectedExclude.clear();
+          // include側の disabled は解除しておく（選択は保持）
+          document.querySelectorAll(".includeFish").forEach(b => b.disabled = false);
+        }
+      });
+    });
+
+    // ★ 注意：モーダルを開いた直後はラジオの現在値に応じて描画する（必要なら）
+    // 例：既に「除外を指定」になっていれば最初に除外欄を描画する
+    const incChecked = Array.from(document.getElementsByName('includeFishMode')).find(r=>r.checked)?.value;
+    const excChecked = Array.from(document.getElementsByName('excludeFishMode')).find(r=>r.checked)?.value;
+    if (incChecked === 'specify' || excChecked === 'specify') {
+      renderFishCheckboxes();
+      // 表示状態はラジオに準拠しておく
+      includeFishContainer.style.display = (incChecked === 'specify') ? 'block' : 'none';
+      excludeFishContainer.style.display = (excChecked === 'specify') ? 'block' : 'none';
+    }
+
+  } catch (e) {
+    console.error("魚リスト生成中にエラー:", e);
+  }
+});
+
 
       // --- 「除外する魚」欄 ---
       document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
