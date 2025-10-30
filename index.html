@@ -1546,12 +1546,73 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const costRadios = document.querySelectorAll('input[name="cost"]');
   const costContainer = document.getElementById('customCostInputContainer');
 
-  let p = 1;
-  let currentCount = 1;
+let p = 1;
+let currentCount = 1;
 
-  proposeBtn.addEventListener('click', () => proposeModal.style.display = 'flex');
-  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
-  proposeModal.addEventListener('click', e => { if(e.target===proposeModal) proposeModal.style.display='none'; });
+// ✅ 修正版（魚リスト生成付き）
+proposeBtn.addEventListener('click', async () => {
+  proposeModal.style.display = 'flex';
+
+  try {
+    const res = await fetch("./docs/recipes.json");
+    const json = await res.json();
+
+    const fishSet = new Set();
+    // recipes と preparations の両方から魚名を収集
+    for (const cat of ["recipes", "preparations"]) {
+      const group = json[cat];
+      if (!group) continue;
+      for (const key in group) {
+        const entry = group[key];
+        if (Array.isArray(entry["fish-name"])) {
+          entry["fish-name"].forEach(f => fishSet.add(f));
+        }
+      }
+    }
+
+    const fishList = Array.from(fishSet).sort();
+
+    // --- コンテナを初期化 ---
+    includeFishContainer.innerHTML = "";
+    excludeFishContainer.innerHTML = "";
+
+    // --- include用 ---
+    fishList.forEach(f => {
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="checkbox" class="includeFish" value="${f}"> ${f}`;
+      includeFishContainer.appendChild(label);
+    });
+
+    // --- exclude用 ---
+    fishList.forEach(f => {
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="checkbox" class="excludeFish" value="${f}"> ${f}`;
+      excludeFishContainer.appendChild(label);
+    });
+
+    // --- 同じ魚を両方で選べないように制御 ---
+    const includeBoxes = document.querySelectorAll(".includeFish");
+    const excludeBoxes = document.querySelectorAll(".excludeFish");
+
+    includeBoxes.forEach((incBox, i) => {
+      incBox.addEventListener("change", () => {
+        excludeBoxes[i].disabled = incBox.checked;
+      });
+    });
+    excludeBoxes.forEach((excBox, i) => {
+      excBox.addEventListener("change", () => {
+        includeBoxes[i].disabled = excBox.checked;
+      });
+    });
+
+  } catch (e) {
+    console.error("魚リスト生成中にエラー:", e);
+  }
+});
+
+closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
+proposeModal.addEventListener('click', e => { if(e.target===proposeModal) proposeModal.style.display='none'; });
+
 
   mealRadios.forEach(r => r.addEventListener('change', ()=>{
     if(r.value==='custom') customMealInputContainer.style.display='block';
