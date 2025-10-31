@@ -507,24 +507,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     <button class="close-propose" id="closeProposeBtn">&times;</button>
     <h2>レシピ提案</h2>
 
-    <!-- 食数選択 -->
-    <fieldset class="propose-group">
-      <legend>食数選択</legend>
-      <label><input type="radio" name="meals" value="1" checked> 1食</label>
-      <label><input type="radio" name="meals" value="3"> 1日(3食)</label>
-      <label><input type="radio" name="meals" value="9"> 3日(9食)</label>
-      <label><input type="radio" name="meals" value="custom"> カスタム</label>
-      <div id="customMealInputContainer" style="margin-top:10px;display:none;">
-        <input type="number" id="customMealInput" placeholder="食数を入力" min="1" max="99">
-      </div>
-    </fieldset>
+   <!-- 食数選択 -->
+<fieldset class="propose-group">
+  <legend>食数選択</legend>
+  <label><input type="radio" name="meals" value="1" checked> 1食</label>
+  <label><input type="radio" name="meals" value="3"> 1日(3食)</label>
+  <label><input type="radio" name="meals" value="9"> 3日(9食)</label>
+  <label><input type="radio" name="meals" value="custom"> カスタム</label>
+  <div id="customMealInputContainer" style="margin-top:10px;display:none;">
+    <input type="number" id="customMealInput" placeholder="食数を入力" min="1" max="99">
+    <button id="customMealConfirmBtn">決定</button> <!-- ✅追加 -->
+  </div>
+</fieldset>
 
-    <!-- 設定方法選択 -->
-    <fieldset id="modeSection" class="propose-group">
-      <legend>設定方法選択</legend>
-      <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
-      <label><input type="radio" name="mode" value="each"> 個別設定</label>
-    </fieldset>
+<!-- 設定方法選択 -->
+<fieldset class="propose-group" id="modeSection">
+  <legend>設定方法選択</legend>
+  <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
+  <label><input type="radio" name="mode" value="each"> 個別設定</label>
+</fieldset>
+
 
     <!-- 食数表示窓 -->
     <fieldset class="propose-group" id="counterContainer" style="display:none;">
@@ -1529,6 +1531,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
   const mealRadios = document.querySelectorAll('input[name="meals"]');
   const customMealInputContainer = document.getElementById('customMealInputContainer');
+  const customMealInput = document.getElementById('customMealInput');
+  const customMealConfirmBtn = document.getElementById('customMealConfirmBtn');
   const modeSection = document.getElementById('modeSection');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const counterContainer = document.getElementById('counterContainer');
@@ -1673,12 +1677,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
 
   // === 食数設定 ===
-  function updateMealDisplay(val) {
-    const customVal = Number(document.getElementById('customMealInput').value || 1);
+  function updateMealDisplay(val, confirmed = false) {
+    const customVal = Number(customMealInput.value || 1);
     const effectiveP = (val === 'custom') ? customVal : Number(val);
 
     if (effectiveP <= 1) {
-      // 1食またはカスタムで1
       modeSection.style.display = 'none';
       counterContainer.style.display = 'none';
     } else {
@@ -1686,6 +1689,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 
     p = effectiveP;
+
+    if (confirmed && val === 'custom') {
+      // 決定ボタンが押された場合のみ確定ログ
+      console.log(`カスタム設定が確定: ${p}食`);
+    }
   }
 
   mealRadios.forEach(r => r.addEventListener('change', () => {
@@ -1697,8 +1705,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     updateMealDisplay(r.value);
   }));
 
-  document.getElementById('customMealInput').addEventListener('input', e => {
-    updateMealDisplay('custom');
+  customMealConfirmBtn.addEventListener('click', () => {
+    updateMealDisplay('custom', true);
   });
 
   // === 設定方法選択 ===
@@ -1715,7 +1723,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
 
-  // ✅ 初期状態（1食のときは非表示）
+  // ✅ 初期状態
   updateMealDisplay('1');
 })();
 
