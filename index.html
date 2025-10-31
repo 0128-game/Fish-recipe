@@ -1550,7 +1550,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
   let p = 1;
   let currentCount = 1;
-
   let selectedInclude = new Set();
   let selectedExclude = new Set();
 
@@ -1628,6 +1627,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
       }
 
+      // === include/exclude 魚欄制御 ===
       document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
           if (e.target.value === "specify") {
@@ -1673,30 +1673,37 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
 
   // === 食数設定 ===
-  mealRadios.forEach(r => r.addEventListener('change', () => {
-    const val = r.value;
-    if (val === 'custom') {
-      customMealInputContainer.style.display = 'block';
-      modeSection.style.display = 'block';
-    } else {
-      customMealInputContainer.style.display = 'none';
-    }
+  function updateMealDisplay(val) {
+    const customVal = Number(document.getElementById('customMealInput').value || 1);
+    const effectiveP = (val === 'custom') ? customVal : Number(val);
 
-    if (val === '1') {
+    if (effectiveP <= 1) {
+      // 1食またはカスタムで1
       modeSection.style.display = 'none';
       counterContainer.style.display = 'none';
     } else {
       modeSection.style.display = 'block';
     }
 
-    p = (val === 'custom') ? Number(document.getElementById('customMealInput').value || 1) : Number(val);
+    p = effectiveP;
+  }
+
+  mealRadios.forEach(r => r.addEventListener('change', () => {
+    if (r.value === 'custom') {
+      customMealInputContainer.style.display = 'block';
+    } else {
+      customMealInputContainer.style.display = 'none';
+    }
+    updateMealDisplay(r.value);
   }));
 
-  document.getElementById('customMealInput').addEventListener('input', e => { p = Number(e.target.value || 1); });
+  document.getElementById('customMealInput').addEventListener('input', e => {
+    updateMealDisplay('custom');
+  });
 
   // === 設定方法選択 ===
   modeRadios.forEach(r => r.addEventListener('change', () => {
-    counterContainer.style.display = (r.value === 'each') ? 'block' : 'none';
+    counterContainer.style.display = (r.value === 'each' && p > 1) ? 'block' : 'none';
   }));
 
   // === カウンター ===
@@ -1707,6 +1714,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   diffRadios.forEach(r => r.addEventListener('change', () => diffContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
+
+  // ✅ 初期状態（1食のときは非表示）
+  updateMealDisplay('1');
 })();
 
 
