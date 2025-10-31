@@ -1529,6 +1529,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const mealRadios = document.querySelectorAll('input[name="meals"]');
   const customMealInputContainer = document.getElementById('customMealInputContainer');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
+  const modeSection = document.getElementById('modeSection'); // ← 設定方法選択を囲むdiv（idを付けてください）
   const counterContainer = document.getElementById('counterContainer');
   const leftBtn = document.getElementById('leftBtn');
   const rightBtn = document.getElementById('rightBtn');
@@ -1573,13 +1574,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
       }
       const fishList = Array.from(fishSet).sort();
 
-      // --- 魚チェックボックス描画関数 ---
       function renderFishCheckboxes() {
         includeFishContainer.innerHTML = "";
         excludeFishContainer.innerHTML = "";
 
         fishList.forEach(f => {
-          // include
           const incLabel = document.createElement("label");
           const incInput = document.createElement("input");
           incInput.type = "checkbox";
@@ -1590,7 +1589,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           incLabel.appendChild(document.createTextNode(" " + f));
           includeFishContainer.appendChild(incLabel);
 
-          // exclude
           const excLabel = document.createElement("label");
           const excInput = document.createElement("input");
           excInput.type = "checkbox";
@@ -1602,17 +1600,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           excludeFishContainer.appendChild(excLabel);
         });
 
-        // --- 相互disable制御 ---
         const includeBoxes = Array.from(document.querySelectorAll(".includeFish"));
         const excludeBoxes = Array.from(document.querySelectorAll(".excludeFish"));
 
         includeBoxes.forEach((incBox, i) => {
           incBox.disabled = !!excludeBoxes[i].checked;
-
           incBox.addEventListener("change", () => {
             if (incBox.checked) selectedInclude.add(incBox.value);
             else selectedInclude.delete(incBox.value);
-
             excludeBoxes[i].disabled = incBox.checked;
             if (incBox.checked && excludeBoxes[i].checked) {
               excludeBoxes[i].checked = false;
@@ -1623,11 +1618,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
         excludeBoxes.forEach((excBox, i) => {
           excBox.disabled = !!includeBoxes[i].checked;
-
           excBox.addEventListener("change", () => {
             if (excBox.checked) selectedExclude.add(excBox.value);
             else selectedExclude.delete(excBox.value);
-
             includeBoxes[i].disabled = excBox.checked;
             if (excBox.checked && includeBoxes[i].checked) {
               includeBoxes[i].checked = false;
@@ -1637,7 +1630,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
       }
 
-      // --- 使いたい魚欄 ---
       document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
           if (e.target.value === "specify") {
@@ -1647,13 +1639,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             includeFishContainer.innerHTML = "";
             includeFishContainer.style.display = "none";
             selectedInclude.clear();
-            // 除外側の disable を解除
             document.querySelectorAll(".excludeFish").forEach(b => b.disabled = false);
           }
         });
       });
 
-      // --- 除外する魚欄 ---
       document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
           if (e.target.value === "specify") {
@@ -1663,13 +1653,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
             excludeFishContainer.innerHTML = "";
             excludeFishContainer.style.display = "none";
             selectedExclude.clear();
-            // 使いたい側の disable を解除
             document.querySelectorAll(".includeFish").forEach(b => b.disabled = false);
           }
         });
       });
 
-      // --- モーダル初期状態反映 ---
       const incChecked = Array.from(document.getElementsByName('includeFishMode')).find(r => r.checked)?.value;
       const excChecked = Array.from(document.getElementsByName('excludeFishMode')).find(r => r.checked)?.value;
       if (incChecked === 'specify' || excChecked === 'specify') {
@@ -1691,10 +1679,26 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
   // --- 食数設定 ---
   mealRadios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'custom') customMealInputContainer.style.display = 'block';
-    else customMealInputContainer.style.display = 'none';
+    if (r.value === 'custom') {
+      customMealInputContainer.style.display = 'block';
+    } else {
+      customMealInputContainer.style.display = 'none';
+    }
+
     p = (r.value === 'custom') ? Number(document.getElementById('customMealInput').value || 1) : Number(r.value);
+
+    // ✅ 追加: 「1食」選択時は設定方法選択＆カウンターを非表示
+    if (r.value === '1') {
+      modeSection.style.display = 'none';
+      counterContainer.style.display = 'none';
+    } else {
+      modeSection.style.display = 'block';
+      // "個別設定"が選ばれている場合のみカウンター表示
+      const eachMode = Array.from(modeRadios).find(radio => radio.checked && radio.value === 'each');
+      counterContainer.style.display = (eachMode) ? 'block' : 'none';
+    }
   }));
+
   document.getElementById('customMealInput').addEventListener('input', e => {
     p = Number(e.target.value || 1);
   });
