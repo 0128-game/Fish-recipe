@@ -501,7 +501,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </div>
 </div>
 
-  <!-- ▼追加：レシピ提案モーダル -->
+ <!-- ▼追加：レシピ提案モーダル -->
 <div id="proposeModal">
   <div class="modal-content">
     <button class="close-propose" id="closeProposeBtn">&times;</button>
@@ -520,7 +520,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </fieldset>
 
     <!-- 設定方法選択 -->
-    <fieldset class="propose-group">
+    <fieldset id="modeSection" class="propose-group">
       <legend>設定方法選択</legend>
       <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
       <label><input type="radio" name="mode" value="each"> 個別設定</label>
@@ -592,6 +592,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </fieldset>
   </div>
 </div>
+
 
 
     
@@ -1528,9 +1529,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
   const mealRadios = document.querySelectorAll('input[name="meals"]');
   const customMealInputContainer = document.getElementById('customMealInputContainer');
+  const modeSection = document.getElementById('modeSection');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const counterContainer = document.getElementById('counterContainer');
-  const modeSection = document.querySelector('fieldset legend:contains("設定方法選択")')?.parentElement || document.querySelectorAll('fieldset')[1];
   const leftBtn = document.getElementById('leftBtn');
   const rightBtn = document.getElementById('rightBtn');
   const counterValue = document.getElementById('counterValue');
@@ -1550,10 +1551,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   let p = 1;
   let currentCount = 1;
 
-  // === 魚リスト描画制御 ===
   let selectedInclude = new Set();
   let selectedExclude = new Set();
 
+  // --- モーダル開く ---
   proposeBtn.addEventListener('click', async () => {
     proposeModal.style.display = 'flex';
     try {
@@ -1627,7 +1628,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
       }
 
-      // 使いたい魚欄
       document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
           if (e.target.value === "specify") {
@@ -1642,7 +1642,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         });
       });
 
-      // 除外魚欄
       document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
         radio.addEventListener("change", e => {
           if (e.target.value === "specify") {
@@ -1669,7 +1668,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
   });
 
-  // モーダル閉じる
+  // --- モーダル閉じる ---
   closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
   proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
 
@@ -1683,7 +1682,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
       customMealInputContainer.style.display = 'none';
     }
 
-    // 1食のときは設定方法と食数窓を非表示
     if (val === '1') {
       modeSection.style.display = 'none';
       counterContainer.style.display = 'none';
@@ -1705,11 +1703,12 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   leftBtn.addEventListener('click', () => { if (currentCount > 1) currentCount--; counterValue.textContent = currentCount; });
   rightBtn.addEventListener('click', () => { if (currentCount < p) currentCount++; counterValue.textContent = currentCount; });
 
-  // === カスタム入力欄 ===
+  // === カスタム欄 ===
   diffRadios.forEach(r => r.addEventListener('change', () => diffContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
   costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
 })();
+
 
 
 
