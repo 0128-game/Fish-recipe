@@ -1568,7 +1568,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 
 // ===== レシピ提案モーダル制御 =====
 (function(){
-  // --- 要素取得 ---
   const proposeBtn = document.getElementById('proposeOpenBtn');
   const proposeModal = document.getElementById('proposeModal');
   const closeProposeBtn = document.getElementById('closeProposeBtn');
@@ -1594,13 +1593,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const costRadios = document.querySelectorAll('input[name="cost"]');
   const costContainer = document.getElementById('customCostInputContainer');
 
-  const modeSection = document.querySelector('fieldset legend:contains("設定方法選択")')?.closest('fieldset') || document.querySelector('fieldset:nth-of-type(2)');
+  const modeSection = document.querySelector('fieldset:nth-of-type(2)');
   let p = 1;
   let currentCount = 1;
   let fishList = [];
   let mealSettings = [];
+  let summaryPanel = null; // ← サマリーパネルは動的に作る
 
-  // --- 1食あたりの初期データ ---
+  // === ユーティリティ ===
   function createDefaultMealSetting(){
     return {
       include: new Set(),
@@ -1611,20 +1611,29 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     };
   }
 
-  // --- モーダル開く ---
+  // === モーダル開く ===
   proposeBtn.addEventListener('click', async () => {
     proposeModal.style.display = 'flex';
     await loadFishList();
     initializeMealSettings();
     renderFishCheckboxes();
+    createSummaryPanel(); // ✅ モーダルを開いたときに右パネル生成
     renderSummary();
   });
 
-  // --- モーダル閉じる ---
-  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
-  proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
+  // === モーダル閉じる ===
+  closeProposeBtn.addEventListener('click', () => {
+    proposeModal.style.display = 'none';
+    removeSummaryPanel(); // ✅ モーダル閉じたら削除
+  });
+  proposeModal.addEventListener('click', e => {
+    if (e.target === proposeModal){
+      proposeModal.style.display = 'none';
+      removeSummaryPanel();
+    }
+  });
 
-  // --- 魚リスト読み込み ---
+  // === 魚リスト読み込み ===
   async function loadFishList(){
     try {
       const res = await fetch("./docs/recipes.json");
@@ -1642,7 +1651,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     } catch(e){ console.error("魚リスト読み込みエラー:", e); }
   }
 
-  // --- チェックボックス描画 ---
+  // === チェックボックス描画 ===
   function renderFishCheckboxes() {
     includeFishContainer.innerHTML = "";
     excludeFishContainer.innerHTML = "";
@@ -1683,34 +1692,42 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     });
   }
 
-  // --- 食数変更時 ---
+  // === 食数変更 ===
   function initializeMealSettings(){
     mealSettings = [];
     for(let i=1;i<=p;i++) mealSettings[i] = createDefaultMealSetting();
   }
 
-  // --- 現在食の状態保存 ---
+  // === 現在の食の状態保存 ===
   function saveCurrentMealData(){
     const data = mealSettings[currentCount];
     data.include.clear();
     data.exclude.clear();
-
     document.querySelectorAll(".includeFish:checked").forEach(cb => data.include.add(cb.value));
     document.querySelectorAll(".excludeFish:checked").forEach(cb => data.exclude.add(cb.value));
-
     data.difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || "";
     data.time = document.querySelector('input[name="time"]:checked')?.value || "";
     data.cost = document.querySelector('input[name="cost"]:checked')?.value || "";
-
     renderSummary();
   }
 
-  // --- サマリー描画（右固定パネル） ---
-  const summaryPanel = document.createElement("div");
-  summaryPanel.id = "summaryPanel";
-  document.body.appendChild(summaryPanel);
+  // === サマリーパネル生成・削除 ===
+  function createSummaryPanel(){
+    if(summaryPanel) return;
+    summaryPanel = document.createElement("div");
+    summaryPanel.id = "summaryPanel";
+    document.body.appendChild(summaryPanel);
+  }
+  function removeSummaryPanel(){
+    if(summaryPanel){
+      summaryPanel.remove();
+      summaryPanel = null;
+    }
+  }
 
+  // === サマリー描画 ===
   function renderSummary(){
+    if(!summaryPanel) return;
     summaryPanel.innerHTML = "";
     mealSettings.forEach((m, i) => {
       const card = document.createElement("div");
@@ -1728,7 +1745,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     });
   }
 
-  // --- 食数変更イベント ---
+  // === 食数選択 ===
   mealRadios.forEach(r => r.addEventListener('change', e=>{
     if(e.target.value==='custom'){
       customMealInputContainer.style.display='block';
@@ -1753,14 +1770,14 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     if(p<=1){
       modeSection.style.display='none';
       counterContainer.style.display='none';
-      summaryPanel.style.display='none';
+      if(summaryPanel) summaryPanel.style.display='none';
     }else{
       modeSection.style.display='block';
-      summaryPanel.style.display='block';
+      if(summaryPanel) summaryPanel.style.display='block';
     }
   }
 
-  // --- カスタム食数決定ボタン ---
+  // === カスタム決定ボタン ===
   const customConfirmBtn = document.createElement("button");
   customConfirmBtn.textContent = "決定";
   customConfirmBtn.style.marginLeft = "10px";
@@ -1770,13 +1787,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     updateMealDisplay('custom', val);
   });
 
-  // --- モード選択 ---
+  // === 設定方法・カウンター ===
   modeRadios.forEach(r => r.addEventListener('change', e=>{
-    if(e.target.value==='each') counterContainer.style.display='block';
-    else counterContainer.style.display='none';
+    counterContainer.style.display = (e.target.value==='each') ? 'block' : 'none';
   }));
 
-  // --- カウンター操作 ---
   leftBtn.addEventListener('click', ()=>{
     if(currentCount>1){
       saveCurrentMealData();
@@ -1801,7 +1816,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     renderSummary();
   }
 
-  // --- 指定・非指定切替 ---
+  // === 指定・非指定切替 ===
   includeRadios.forEach(radio => {
     radio.addEventListener("change", e=>{
       if(e.target.value==="specify"){
@@ -1836,11 +1851,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     });
   });
 
-  // --- カスタム欄表示制御 ---
   diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
   timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
   costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
 })();
+
 
 
 
