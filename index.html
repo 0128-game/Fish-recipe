@@ -381,23 +381,23 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 #proposeOpenBtn:hover { background: #2c7a7b; }
 
 #proposeModal {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
+  display: flex;
   justify-content: center;
-  background: rgba(0,0,0,0.45);
-  z-index: 2000;
+  align-items: center; /* ← flex-startからcenterに変更 */
 }
-#proposeModal .modal-content {
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  width: 95%;
-  max-width: 760px;
+
+.modal-content {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 95%; /* ← 90%→95% に変更 */
+  max-width: 1200px; /* ← 追加：より広く */
   max-height: 90vh;
-  overflow-y: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
 }
+
 .propose-group { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fafcff; }
 .counter { display:flex; align-items:center; justify-content:center; gap:15px; }
 .counter button { background: var(--accent); color:white; border:none; border-radius:6px; font-size:1.2rem; width:35px; height:35px; cursor:pointer; }
@@ -1566,7 +1566,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     };
 })();
 
+// ===== レシピ提案モーダル制御 =====
 (function(){
+  // --- 要素取得 ---
   const proposeBtn = document.getElementById('proposeOpenBtn');
   const proposeModal = document.getElementById('proposeModal');
   const closeProposeBtn = document.getElementById('closeProposeBtn');
@@ -1574,34 +1576,56 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const mealRadios = document.querySelectorAll('input[name="meals"]');
   const customMealInputContainer = document.getElementById('customMealInputContainer');
   const customMealInput = document.getElementById('customMealInput');
-  const customMealConfirmBtn = document.getElementById('customMealConfirmBtn');
-  const modeSection = document.getElementById('modeSection');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const counterContainer = document.getElementById('counterContainer');
   const leftBtn = document.getElementById('leftBtn');
   const rightBtn = document.getElementById('rightBtn');
   const counterValue = document.getElementById('counterValue');
-  const mealSummary = document.getElementById('mealSummary');
-  const summaryPanel = document.getElementById('summaryPanel');
 
   const includeFishContainer = document.getElementById('includeFishContainer');
   const excludeFishContainer = document.getElementById('excludeFishContainer');
-  const diffRadios = document.querySelectorAll('input[name="difficulty"]');
-  const timeRadios = document.querySelectorAll('input[name="time"]');
-  const costRadios = document.querySelectorAll('input[name="cost"]');
+  const includeRadios = document.getElementsByName('includeFishMode');
+  const excludeRadios = document.getElementsByName('excludeFishMode');
 
+  const diffRadios = document.querySelectorAll('input[name="difficulty"]');
+  const diffContainer = document.getElementById('customDiffInputContainer');
+  const timeRadios = document.querySelectorAll('input[name="time"]');
+  const timeContainer = document.getElementById('customTimeInputContainer');
+  const costRadios = document.querySelectorAll('input[name="cost"]');
+  const costContainer = document.getElementById('customCostInputContainer');
+
+  const modeSection = document.querySelector('fieldset legend:contains("設定方法選択")')?.closest('fieldset') || document.querySelector('fieldset:nth-of-type(2)');
   let p = 1;
   let currentCount = 1;
   let fishList = [];
-  const mealSettings = {};
+  let mealSettings = [];
 
-  function createDefaultMealSetting() {
-    return { includeFish: [], excludeFish: [], difficulty: "", time: "", cost: "" };
+  // --- 1食あたりの初期データ ---
+  function createDefaultMealSetting(){
+    return {
+      include: new Set(),
+      exclude: new Set(),
+      difficulty: "",
+      time: "",
+      cost: ""
+    };
   }
 
-  // モーダル開く
+  // --- モーダル開く ---
   proposeBtn.addEventListener('click', async () => {
     proposeModal.style.display = 'flex';
+    await loadFishList();
+    initializeMealSettings();
+    renderFishCheckboxes();
+    renderSummary();
+  });
+
+  // --- モーダル閉じる ---
+  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
+  proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
+
+  // --- 魚リスト読み込み ---
+  async function loadFishList(){
     try {
       const res = await fetch("./docs/recipes.json");
       const json = await res.json();
@@ -1615,66 +1639,10 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
       }
       fishList = Array.from(fishSet).sort();
-    } catch(e) { console.error("魚読み込みエラー:", e); }
-  });
-
-  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
-  proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
-
-  // 食数設定
-  function updateMealDisplay(val, confirmed=false) {
-    const customVal = Number(customMealInput.value || 1);
-    p = (val === 'custom') ? customVal : Number(val);
-
-    if (p <= 1) {
-      modeSection.style.display = 'none';
-      counterContainer.style.display = 'none';
-      summaryPanel.style.display = 'none';
-    } else {
-      modeSection.style.display = 'block';
-      summaryPanel.style.display = 'block';
-    }
-
-    for (let i = 1; i <= p; i++) if (!mealSettings[i]) mealSettings[i] = createDefaultMealSetting();
+    } catch(e){ console.error("魚リスト読み込みエラー:", e); }
   }
 
-  mealRadios.forEach(r => r.addEventListener('change', () => {
-    customMealInputContainer.style.display = (r.value === 'custom') ? 'block' : 'none';
-    updateMealDisplay(r.value);
-  }));
-  customMealConfirmBtn.addEventListener('click', () => updateMealDisplay('custom', true));
-
-  // モード切替
-  modeRadios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'each' && p > 1) {
-      counterContainer.style.display = 'block';
-      summaryPanel.style.display = 'block';
-      renderMealData();
-      renderSummary();
-    } else {
-      counterContainer.style.display = 'none';
-    }
-  }));
-
-  // カウンター
-  leftBtn.addEventListener('click', () => {
-    if (currentCount > 1) {
-      saveCurrentMealData();
-      currentCount--;
-      counterValue.textContent = currentCount;
-      renderMealData();
-    }
-  });
-  rightBtn.addEventListener('click', () => {
-    if (currentCount < p) {
-      saveCurrentMealData();
-      currentCount++;
-      counterValue.textContent = currentCount;
-      renderMealData();
-    }
-  });
-
-  // 魚チェックボックス
+  // --- チェックボックス描画 ---
   function renderFishCheckboxes() {
     includeFishContainer.innerHTML = "";
     excludeFishContainer.innerHTML = "";
@@ -1696,100 +1664,182 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
       excLabel.append(excInput, " " + f);
       excludeFishContainer.appendChild(excLabel);
 
-      // 相互排他
-      incInput.addEventListener("change", () => {
-        if (incInput.checked) {
+      // --- 相互排他 ---
+      function syncExclusiveState(){
+        if (incInput.checked){
           excInput.disabled = true;
           excInput.checked = false;
-        } else {
-          excInput.disabled = false;
-        }
-        saveCurrentMealData();
-      });
-      excInput.addEventListener("change", () => {
-        if (excInput.checked) {
+        } else if (excInput.checked){
           incInput.disabled = true;
           incInput.checked = false;
         } else {
           incInput.disabled = false;
+          excInput.disabled = false;
         }
-        saveCurrentMealData();
-      });
+      }
+
+      incInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
+      excInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
     });
   }
 
-  // 指定する / しない
-  const includeRadios = document.getElementsByName("includeFishMode");
-  const excludeRadios = document.getElementsByName("excludeFishMode");
+  // --- 食数変更時 ---
+  function initializeMealSettings(){
+    mealSettings = [];
+    for(let i=1;i<=p;i++) mealSettings[i] = createDefaultMealSetting();
+  }
 
-  includeRadios.forEach(radio => {
-    radio.addEventListener("change", e => {
-      if (e.target.value === "specify") {
-        includeFishContainer.style.display = "block";
-        if (fishList.length > 0) renderFishCheckboxes();
-      } else {
-        includeFishContainer.style.display = "none";
-      }
-    });
-  });
-  excludeRadios.forEach(radio => {
-    radio.addEventListener("change", e => {
-      if (e.target.value === "specify") {
-        excludeFishContainer.style.display = "block";
-        if (fishList.length > 0) renderFishCheckboxes();
-      } else {
-        excludeFishContainer.style.display = "none";
-      }
-    });
-  });
+  // --- 現在食の状態保存 ---
+  function saveCurrentMealData(){
+    const data = mealSettings[currentCount];
+    data.include.clear();
+    data.exclude.clear();
 
-  // 保存＆描画
-  function saveCurrentMealData() {
-    const idx = currentCount;
-    const inc = Array.from(document.querySelectorAll(".includeFish:checked")).map(i => i.value);
-    const exc = Array.from(document.querySelectorAll(".excludeFish:checked")).map(i => i.value);
-    const diff = document.querySelector('input[name="difficulty"]:checked')?.value || "";
-    const time = document.querySelector('input[name="time"]:checked')?.value || "";
-    const cost = document.querySelector('input[name="cost"]:checked')?.value || "";
-    mealSettings[idx] = { includeFish: inc, excludeFish: exc, difficulty: diff, time, cost };
+    document.querySelectorAll(".includeFish:checked").forEach(cb => data.include.add(cb.value));
+    document.querySelectorAll(".excludeFish:checked").forEach(cb => data.exclude.add(cb.value));
+
+    data.difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || "";
+    data.time = document.querySelector('input[name="time"]:checked')?.value || "";
+    data.cost = document.querySelector('input[name="cost"]:checked')?.value || "";
+
     renderSummary();
   }
 
-  [...diffRadios, ...timeRadios, ...costRadios].forEach(el => el.addEventListener('change', saveCurrentMealData));
+  // --- サマリー描画（右固定パネル） ---
+  const summaryPanel = document.createElement("div");
+  summaryPanel.id = "summaryPanel";
+  document.body.appendChild(summaryPanel);
 
-  function renderMealData() {
-    const idx = currentCount;
-    const d = mealSettings[idx] || createDefaultMealSetting();
-    document.querySelectorAll(".includeFish").forEach(cb => cb.checked = d.includeFish.includes(cb.value));
-    document.querySelectorAll(".excludeFish").forEach(cb => cb.checked = d.excludeFish.includes(cb.value));
-    diffRadios.forEach(r => r.checked = (r.value === d.difficulty));
-    timeRadios.forEach(r => r.checked = (r.value === d.time));
-    costRadios.forEach(r => r.checked = (r.value === d.cost));
+  function renderSummary(){
+    summaryPanel.innerHTML = "";
+    mealSettings.forEach((m, i) => {
+      const card = document.createElement("div");
+      card.className = "summary-card";
+      card.innerHTML = `
+        <h3>${i}食目</h3>
+        <p><strong>使いたい魚:</strong> ${[...m.include].join("、") || "なし"}</p>
+        <p><strong>除外する魚:</strong> ${[...m.exclude].join("、") || "なし"}</p>
+        <p><strong>難易度:</strong> ${m.difficulty ? m.difficulty + " 以下" : "指定なし"}</p>
+        <p><strong>時間:</strong> ${m.time ? m.time + " 分以内" : "指定なし"}</p>
+        <p><strong>費用:</strong> ${m.cost ? "¥" + m.cost + " 以下" : "指定なし"}</p>
+      `;
+      if (i === currentCount) card.classList.add("active");
+      summaryPanel.appendChild(card);
+    });
   }
 
-  // サマリー描画
-  function renderSummary() {
-    let html = "";
-    for (let i = 1; i <= p; i++) {
-      const d = mealSettings[i] || createDefaultMealSetting();
-      const diffTxt = d.difficulty ? `Lv.${d.difficulty}` : "制限なし";
-      const timeTxt = d.time ? `${d.time}分以内` : "制限なし";
-      const costTxt = d.cost ? `¥${d.cost}以下` : "制限なし";
-      html += `
-        <div style="
-          background:#fff;border:1px solid #ddd;border-radius:10px;
-          padding:10px;margin-bottom:10px;box-shadow:1px 1px 4px rgba(0,0,0,0.1);
-        ">
-          <strong style="font-size:1.1em;">🍽 ${i}食目</strong><br>
-          🐟使う魚：${d.includeFish.join(", ") || "なし"}<br>
-          🚫除外魚：${d.excludeFish.join(", ") || "なし"}<br>
-          🎯難易度：${diffTxt}<br>
-          ⏱時間：${timeTxt}<br>
-          💰費用：${costTxt}
-        </div>`;
+  // --- 食数変更イベント ---
+  mealRadios.forEach(r => r.addEventListener('change', e=>{
+    if(e.target.value==='custom'){
+      customMealInputContainer.style.display='block';
+    }else{
+      customMealInputContainer.style.display='none';
+      updateMealDisplay(e.target.value);
     }
-    mealSummary.innerHTML = html;
+  }));
+
+  customMealInput.addEventListener('input', e=>{
+    const val = Number(e.target.value||1);
+    updateMealDisplay('custom', val);
+  });
+
+  function updateMealDisplay(val, customVal=null){
+    const newVal = val==='custom' ? Number(customVal||1) : Number(val);
+    p = newVal;
+    initializeMealSettings();
+    renderFishCheckboxes();
+    renderSummary();
+
+    if(p<=1){
+      modeSection.style.display='none';
+      counterContainer.style.display='none';
+      summaryPanel.style.display='none';
+    }else{
+      modeSection.style.display='block';
+      summaryPanel.style.display='block';
+    }
   }
+
+  // --- カスタム食数決定ボタン ---
+  const customConfirmBtn = document.createElement("button");
+  customConfirmBtn.textContent = "決定";
+  customConfirmBtn.style.marginLeft = "10px";
+  customMealInputContainer.appendChild(customConfirmBtn);
+  customConfirmBtn.addEventListener("click", ()=>{
+    const val = Number(customMealInput.value||1);
+    updateMealDisplay('custom', val);
+  });
+
+  // --- モード選択 ---
+  modeRadios.forEach(r => r.addEventListener('change', e=>{
+    if(e.target.value==='each') counterContainer.style.display='block';
+    else counterContainer.style.display='none';
+  }));
+
+  // --- カウンター操作 ---
+  leftBtn.addEventListener('click', ()=>{
+    if(currentCount>1){
+      saveCurrentMealData();
+      currentCount--;
+      counterValue.textContent=currentCount;
+      loadMealData();
+    }
+  });
+  rightBtn.addEventListener('click', ()=>{
+    if(currentCount<p){
+      saveCurrentMealData();
+      currentCount++;
+      counterValue.textContent=currentCount;
+      loadMealData();
+    }
+  });
+
+  function loadMealData(){
+    const data = mealSettings[currentCount];
+    document.querySelectorAll(".includeFish").forEach(cb => cb.checked = data.include.has(cb.value));
+    document.querySelectorAll(".excludeFish").forEach(cb => cb.checked = data.exclude.has(cb.value));
+    renderSummary();
+  }
+
+  // --- 指定・非指定切替 ---
+  includeRadios.forEach(radio => {
+    radio.addEventListener("change", e=>{
+      if(e.target.value==="specify"){
+        includeFishContainer.style.display="block";
+        renderFishCheckboxes();
+      }else{
+        includeFishContainer.style.display="none";
+        document.querySelectorAll(".includeFish").forEach(cb=>{
+          const pair=document.querySelector(`.excludeFish[value="${cb.value}"]`);
+          if(pair) pair.disabled=false;
+          cb.checked=false;
+        });
+        saveCurrentMealData();
+      }
+    });
+  });
+
+  excludeRadios.forEach(radio => {
+    radio.addEventListener("change", e=>{
+      if(e.target.value==="specify"){
+        excludeFishContainer.style.display="block";
+        renderFishCheckboxes();
+      }else{
+        excludeFishContainer.style.display="none";
+        document.querySelectorAll(".excludeFish").forEach(cb=>{
+          const pair=document.querySelector(`.includeFish[value="${cb.value}"]`);
+          if(pair) pair.disabled=false;
+          cb.checked=false;
+        });
+        saveCurrentMealData();
+      }
+    });
+  });
+
+  // --- カスタム欄表示制御 ---
+  diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
+  timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
+  costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
 })();
 
 
