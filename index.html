@@ -537,14 +537,11 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     </div>
 </div>
 
-<!-- ▼レシピ提案モーダル -->
-<div id="proposeModal">
+<!-- ▼追加：レシピ提案モーダル -->
+<div id="proposeModal" style="display:none;">  <!-- ← display:none を追加 -->
   <div class="modal-content">
-    <!-- 左側：設定項目 -->
-    <div class="modal-left">
-      <button class="close-propose" id="closeProposeBtn">&times;</button>
-      <h2>レシピ提案</h2>
-
+    <button class="close-propose" id="closeProposeBtn">&times;</button>
+    <h2>レシピ提案</h2>
       <!-- 食数選択 -->
       <fieldset class="propose-group">
         <legend>食数選択</legend>
@@ -1598,9 +1595,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   let currentCount = 1;
   let fishList = [];
   let mealSettings = [];
-  let summaryPanel = null; // ← サマリーパネルは動的に作る
+  let summaryPanel = null;
 
-  // === ユーティリティ ===
+  // ====== 基本関数 ======
   function createDefaultMealSetting(){
     return {
       include: new Set(),
@@ -1611,29 +1608,27 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     };
   }
 
-  // === モーダル開く ===
+  // ====== モーダル開く ======
   proposeBtn.addEventListener('click', async () => {
-    proposeModal.style.display = 'flex';
+    proposeModal.style.display = 'flex'; // ✅ 押した時だけ開く
     await loadFishList();
     initializeMealSettings();
     renderFishCheckboxes();
-    createSummaryPanel(); // ✅ モーダルを開いたときに右パネル生成
+    createSummaryPanel();
     renderSummary();
   });
 
-  // === モーダル閉じる ===
-  closeProposeBtn.addEventListener('click', () => {
+  // ====== モーダル閉じる ======
+  function closeModal(){
     proposeModal.style.display = 'none';
-    removeSummaryPanel(); // ✅ モーダル閉じたら削除
-  });
+    removeSummaryPanel();
+  }
+  closeProposeBtn.addEventListener('click', closeModal);
   proposeModal.addEventListener('click', e => {
-    if (e.target === proposeModal){
-      proposeModal.style.display = 'none';
-      removeSummaryPanel();
-    }
+    if (e.target === proposeModal) closeModal();
   });
 
-  // === 魚リスト読み込み ===
+  // ====== 魚リスト読み込み ======
   async function loadFishList(){
     try {
       const res = await fetch("./docs/recipes.json");
@@ -1651,7 +1646,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     } catch(e){ console.error("魚リスト読み込みエラー:", e); }
   }
 
-  // === チェックボックス描画 ===
+  // ====== チェックボックス描画 ======
   function renderFishCheckboxes() {
     includeFishContainer.innerHTML = "";
     excludeFishContainer.innerHTML = "";
@@ -1686,19 +1681,17 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
           excInput.disabled = false;
         }
       }
-
       incInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
       excInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
     });
   }
 
-  // === 食数変更 ===
+  // ====== 食数管理 ======
   function initializeMealSettings(){
     mealSettings = [];
     for(let i=1;i<=p;i++) mealSettings[i] = createDefaultMealSetting();
   }
 
-  // === 現在の食の状態保存 ===
   function saveCurrentMealData(){
     const data = mealSettings[currentCount];
     data.include.clear();
@@ -1711,7 +1704,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     renderSummary();
   }
 
-  // === サマリーパネル生成・削除 ===
+  // ====== サマリー制御 ======
   function createSummaryPanel(){
     if(summaryPanel) return;
     summaryPanel = document.createElement("div");
@@ -1725,7 +1718,6 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
   }
 
-  // === サマリー描画 ===
   function renderSummary(){
     if(!summaryPanel) return;
     summaryPanel.innerHTML = "";
@@ -1745,7 +1737,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     });
   }
 
-  // === 食数選択 ===
+  // ====== 食数選択 ======
   mealRadios.forEach(r => r.addEventListener('change', e=>{
     if(e.target.value==='custom'){
       customMealInputContainer.style.display='block';
@@ -1777,7 +1769,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
   }
 
-  // === カスタム決定ボタン ===
+  // ====== カスタム決定 ======
   const customConfirmBtn = document.createElement("button");
   customConfirmBtn.textContent = "決定";
   customConfirmBtn.style.marginLeft = "10px";
@@ -1787,7 +1779,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     updateMealDisplay('custom', val);
   });
 
-  // === 設定方法・カウンター ===
+  // ====== カウンター ======
   modeRadios.forEach(r => r.addEventListener('change', e=>{
     counterContainer.style.display = (e.target.value==='each') ? 'block' : 'none';
   }));
@@ -1816,7 +1808,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     renderSummary();
   }
 
-  // === 指定・非指定切替 ===
+  // ====== 魚選択・排他制御 ======
   includeRadios.forEach(radio => {
     radio.addEventListener("change", e=>{
       if(e.target.value==="specify"){
@@ -1851,10 +1843,12 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     });
   });
 
+  // ====== カスタム欄制御 ======
   diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
   timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
   costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
 })();
+
 
 
 
