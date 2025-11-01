@@ -368,6 +368,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 }
 
+/* --------------------------------------------------
+   レシピ提案ボタン
+   -------------------------------------------------- */
 #proposeOpenBtn {
   background: #38b2ac;
   color: #fff;
@@ -380,67 +383,159 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 }
 #proposeOpenBtn:hover { background: #2c7a7b; }
 
+/* --------------------------------------------------
+   モーダル（オーバーレイ） — 初期は非表示
+   モーダルは画面中央に表示され、背景を暗くする
+   -------------------------------------------------- */
 #proposeModal {
+  display: none;               /* ページロード時は非表示 */
+  position: fixed;
+  inset: 0;                    /* top:0; right:0; bottom:0; left:0 */
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
   display: flex;
   justify-content: center;
-  align-items: center; /* ← flex-startからcenterに変更 */
+  align-items: center;
+  padding: 20px;               /* モバイル時に余白を確保 */
 }
 
+/* --------------------------------------------------
+   モーダル本体（白いカード） — 中央に固定
+   横並び（左:設定、右:サマリー）レイアウト
+   -------------------------------------------------- */
 .modal-content {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  width: 95%; /* ← 90%→95% に変更 */
-  max-width: 1200px; /* ← 追加：より広く */
-  max-height: 90vh;
   background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-}
-
-.propose-group { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fafcff; }
-.counter { display:flex; align-items:center; justify-content:center; gap:15px; }
-.counter button { background: var(--accent); color:white; border:none; border-radius:6px; font-size:1.2rem; width:35px; height:35px; cursor:pointer; }
-.counter span { font-size:1.4rem; font-weight:bold; min-width:40px; text-align:center; display:inline-block; }
-.close-propose { background:none; border:none; color:#666; font-size:1.8rem; float:right; cursor:pointer; }
-
-/* ===== サマリーパネルの右固定化 ===== */
-#proposeModal {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-.modal-content {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  width: 90%;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 1200px;
   max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.25);
+  padding: 20px;
+  display: flex;
+  gap: 20px;
 }
+
+/* --------------------------------------------------
+   左側（フォーム部分）スクロールエリア
+   -------------------------------------------------- */
 .modal-left {
   flex: 2;
   overflow-y: auto;
   max-height: 85vh;
-  padding-right: 10px;
-  border-right: 1px solid #ccc;
+  padding-right: 12px;
+  box-sizing: border-box;
+  border-right: 1px solid #e6e6e6;
 }
+
+/* --------------------------------------------------
+   右側サマリーパネル（モーダル内） — 固定表示
+   ※ position: sticky にして、モーダル内で常に見えるように
+   -------------------------------------------------- */
 #summaryPanel {
   flex: 1;
   background: #f9fafc;
   border-left: 2px solid #ddd;
-  padding: 10px 15px;
+  padding: 12px 16px;
   border-radius: 10px;
   height: 85vh;
   overflow-y: auto;
   position: sticky;
-  top: 10px;
+  top: 20px;
+  box-sizing: border-box;
 }
+
+/* --------------------------------------------------
+   見た目調整（フィールドグループ・カウンタ・閉じるボタン等）
+   -------------------------------------------------- */
+.propose-group {
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  background: #fafcff;
+}
+
+.counter {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:15px;
+}
+.counter button {
+  background: var(--accent, #2b6cb0);
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-size:1.2rem;
+  width:35px;
+  height:35px;
+  cursor:pointer;
+}
+.counter span {
+  font-size:1.4rem;
+  font-weight:bold;
+  min-width:40px;
+  text-align:center;
+  display:inline-block;
+}
+
+/* close ボタンは絶対位置でカード内右上に表示（float を使わない） */
+.close-propose {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  background:none;
+  border:none;
+  color:#666;
+  font-size:1.6rem;
+  cursor:pointer;
+}
+
+/* --------------------------------------------------
+   サマリーヘッダ
+   -------------------------------------------------- */
 #summaryPanel h3 {
   text-align: center;
   margin-bottom: 10px;
 }
 
-    
+/* --------------------------------------------------
+   サマリーカード
+   -------------------------------------------------- */
+.summary-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.summary-card.active {
+  border-color: #2b6cb0;
+  background: #eaf4ff;
+}
+
+/* --------------------------------------------------
+   レスポンシブ（幅が狭いときは縦積み）
+   -------------------------------------------------- */
+@media (max-width: 900px) {
+  .modal-content {
+    flex-direction: column;
+    padding: 14px;
+    width: 100%;
+    max-width: 720px;
+  }
+  .modal-left { border-right: none; max-height: 60vh; }
+  #summaryPanel { position: relative; top: 0; height: auto; max-height: 40vh; }
+}
+
+/* --------------------------------------------------
+   小さなタッチ改善
+   -------------------------------------------------- */
+input[type="number"] { width: 80px; }
+label { display: inline-flex; align-items:center; gap:8px; margin-right:8px; }
+
 </style>
 
 <div class="wrap" id="wrap">
@@ -536,9 +631,8 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         </div>
     </div>
 </div>
-
 <!-- ▼追加：レシピ提案モーダル -->
-<div id="proposeModal" style="display:none;">  <!-- ← display:none を追加 -->
+<div id="proposeModal" style="display:none;">
   <div class="modal-content">
     <button class="close-propose" id="closeProposeBtn">&times;</button>
     <h2>レシピ提案</h2>
