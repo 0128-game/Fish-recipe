@@ -368,6 +368,9 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     }
 }
 
+/* --------------------------------------------------
+   レシピ提案ボタン
+   -------------------------------------------------- */
 #proposeOpenBtn {
   background: #38b2ac;
   color: #fff;
@@ -380,31 +383,159 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 }
 #proposeOpenBtn:hover { background: #2c7a7b; }
 
+/* --------------------------------------------------
+   モーダル（オーバーレイ） — 初期は非表示
+   モーダルは画面中央に表示され、背景を暗くする
+   -------------------------------------------------- */
 #proposeModal {
+  display: none;               /* ページロード時は非表示 */
   position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
+  inset: 0;                    /* top:0; right:0; bottom:0; left:0 */
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
   justify-content: center;
-  background: rgba(0,0,0,0.45);
-  z-index: 2000;
+  align-items: center;
+  padding: 20px;               /* モバイル時に余白を確保 */
 }
-#proposeModal .modal-content {
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  width: 95%;
-  max-width: 760px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.propose-group { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fafcff; }
-.counter { display:flex; align-items:center; justify-content:center; gap:15px; }
-.counter button { background: var(--accent); color:white; border:none; border-radius:6px; font-size:1.2rem; width:35px; height:35px; cursor:pointer; }
-.counter span { font-size:1.4rem; font-weight:bold; min-width:40px; text-align:center; display:inline-block; }
-.close-propose { background:none; border:none; color:#666; font-size:1.8rem; float:right; cursor:pointer; }
 
-    
+/* --------------------------------------------------
+   モーダル本体（白いカード） — 中央に固定
+   横並び（左:設定、右:サマリー）レイアウト
+   -------------------------------------------------- */
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 6px 30px rgba(0,0,0,0.25);
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+}
+
+/* --------------------------------------------------
+   左側（フォーム部分）スクロールエリア
+   -------------------------------------------------- */
+.modal-left {
+  flex: 2;
+  overflow-y: auto;
+  max-height: 85vh;
+  padding-right: 12px;
+  box-sizing: border-box;
+  border-right: 1px solid #e6e6e6;
+}
+
+/* --------------------------------------------------
+   右側サマリーパネル（モーダル内） — 固定表示
+   ※ position: sticky にして、モーダル内で常に見えるように
+   -------------------------------------------------- */
+#summaryPanel {
+  flex: 1;
+  background: #f9fafc;
+  border-left: 2px solid #ddd;
+  padding: 12px 16px;
+  border-radius: 10px;
+  height: 85vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 20px;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------
+   見た目調整（フィールドグループ・カウンタ・閉じるボタン等）
+   -------------------------------------------------- */
+.propose-group {
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  background: #fafcff;
+}
+
+.counter {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:15px;
+}
+.counter button {
+  background: var(--accent, #2b6cb0);
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-size:1.2rem;
+  width:35px;
+  height:35px;
+  cursor:pointer;
+}
+.counter span {
+  font-size:1.4rem;
+  font-weight:bold;
+  min-width:40px;
+  text-align:center;
+  display:inline-block;
+}
+
+/* close ボタンは絶対位置でカード内右上に表示（float を使わない） */
+.close-propose {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  background:none;
+  border:none;
+  color:#666;
+  font-size:1.6rem;
+  cursor:pointer;
+}
+
+/* --------------------------------------------------
+   サマリーヘッダ
+   -------------------------------------------------- */
+#summaryPanel h3 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* --------------------------------------------------
+   サマリーカード
+   -------------------------------------------------- */
+.summary-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.summary-card.active {
+  border-color: #2b6cb0;
+  background: #eaf4ff;
+}
+
+/* --------------------------------------------------
+   レスポンシブ（幅が狭いときは縦積み）
+   -------------------------------------------------- */
+@media (max-width: 900px) {
+  .modal-content {
+    flex-direction: column;
+    padding: 14px;
+    width: 100%;
+    max-width: 720px;
+  }
+  .modal-left { border-right: none; max-height: 60vh; }
+  #summaryPanel { position: relative; top: 0; height: auto; max-height: 40vh; }
+}
+
+/* --------------------------------------------------
+   小さなタッチ改善
+   -------------------------------------------------- */
+input[type="number"] { width: 80px; }
+label { display: inline-flex; align-items:center; gap:8px; margin-right:8px; }
+
 </style>
 
 <div class="wrap" id="wrap">
@@ -500,111 +631,104 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         </div>
     </div>
 </div>
-
 <!-- ▼追加：レシピ提案モーダル -->
-<div id="proposeModal">
+<div id="proposeModal" style="display:none;">
   <div class="modal-content">
     <button class="close-propose" id="closeProposeBtn">&times;</button>
     <h2>レシピ提案</h2>
+      <!-- 食数選択 -->
+      <fieldset class="propose-group">
+        <legend>食数選択</legend>
+        <label><input type="radio" name="meals" value="1" checked> 1食</label>
+        <label><input type="radio" name="meals" value="3"> 1日(3食)</label>
+        <label><input type="radio" name="meals" value="9"> 3日(9食)</label>
+        <label><input type="radio" name="meals" value="custom"> カスタム</label>
+        <div id="customMealInputContainer" style="margin-top:10px;display:none;">
+          <input type="number" id="customMealInput" placeholder="食数を入力" min="1" max="99">
+          <button id="customMealConfirmBtn">決定</button>
+        </div>
+      </fieldset>
 
-    <div class="modal-body" style="display:flex; gap:20px;">
-      <!-- 左側：設定フォーム -->
-      <div class="modal-left" style="flex:1; overflow-y:auto; max-height:70vh;">
-        <!-- 食数選択 -->
-        <fieldset class="propose-group">
-          <legend>食数選択</legend>
-          <label><input type="radio" name="meals" value="1" checked> 1食</label>
-          <label><input type="radio" name="meals" value="3"> 1日(3食)</label>
-          <label><input type="radio" name="meals" value="9"> 3日(9食)</label>
-          <label><input type="radio" name="meals" value="custom"> カスタム</label>
-          <div id="customMealInputContainer" style="margin-top:10px;display:none;">
-            <input type="number" id="customMealInput" placeholder="食数を入力" min="1" max="99">
-            <button id="customMealConfirmBtn">決定</button>
-          </div>
-        </fieldset>
+      <!-- 設定方法選択 -->
+      <fieldset class="propose-group" id="modeSection">
+        <legend>設定方法選択</legend>
+        <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
+        <label><input type="radio" name="mode" value="each"> 個別設定</label>
+      </fieldset>
 
-        <!-- 設定方法選択 -->
-        <fieldset id="modeSection" class="propose-group">
-          <legend>設定方法選択</legend>
-          <label><input type="radio" name="mode" value="all" checked> 一斉設定</label>
-          <label><input type="radio" name="mode" value="each"> 個別設定</label>
-        </fieldset>
+      <!-- 食数表示窓 -->
+      <fieldset class="propose-group" id="counterContainer" style="display:none;">
+        <legend>食数表示窓</legend>
+        <div class="counter">
+          <button id="leftBtn">←</button>
+          <span id="counterValue">1</span>
+          <button id="rightBtn">→</button>
+        </div>
+      </fieldset>
 
-        <!-- 食数表示窓 -->
-        <fieldset class="propose-group" id="counterContainer" style="display:none;">
-          <legend>食数表示窓</legend>
-          <div class="counter">
-            <button id="leftBtn">←</button>
-            <span id="counterValue">1</span>
-            <button id="rightBtn">→</button>
-          </div>
-        </fieldset>
+      <!-- 使いたい魚 -->
+      <fieldset class="propose-group">
+        <legend>使いたい魚選択</legend>
+        <label><input type="radio" name="includeFishMode" value="none" checked> 指定しない</label>
+        <label><input type="radio" name="includeFishMode" value="specify"> 指定する</label>
+        <div id="includeFishContainer" style="margin-top:10px;display:none;"></div>
+      </fieldset>
 
-        <!-- 使いたい魚選択 -->
-        <fieldset class="propose-group">
-          <legend>使いたい魚選択</legend>
-          <label><input type="radio" name="includeFishMode" value="none" checked> 指定しない</label>
-          <label><input type="radio" name="includeFishMode" value="specify"> 指定する</label>
-          <div id="includeFishContainer" style="margin-top:10px;display:none;"></div>
-        </fieldset>
+      <!-- 除外する魚 -->
+      <fieldset class="propose-group">
+        <legend>除外する魚選択</legend>
+        <label><input type="radio" name="excludeFishMode" value="none" checked> 指定しない</label>
+        <label><input type="radio" name="excludeFishMode" value="specify"> 指定する</label>
+        <div id="excludeFishContainer" style="margin-top:10px;display:none;"></div>
+      </fieldset>
 
-        <!-- 除外する魚選択 -->
-        <fieldset class="propose-group">
-          <legend>除外する魚選択</legend>
-          <label><input type="radio" name="excludeFishMode" value="none" checked> 指定しない</label>
-          <label><input type="radio" name="excludeFishMode" value="specify"> 指定する</label>
-          <div id="excludeFishContainer" style="margin-top:10px;display:none;"></div>
-        </fieldset>
+      <!-- 難易度 -->
+      <fieldset class="propose-group">
+        <legend>難易度選択</legend>
+        <label><input type="radio" name="difficulty" value=""> 制限なし</label>
+        <label><input type="radio" name="difficulty" value="1"> Lv1以下</label>
+        <label><input type="radio" name="difficulty" value="2"> Lv2以下</label>
+        <label><input type="radio" name="difficulty" value="3"> Lv3以下</label>
+        <label><input type="radio" name="difficulty" value="custom"> カスタム</label>
+        <div id="customDiffInputContainer" style="margin-top:10px;display:none;">
+          <input type="number" id="customDiffInput" min="1" max="5" placeholder="最大難易度">
+        </div>
+      </fieldset>
 
-        <!-- 難易度 -->
-        <fieldset class="propose-group">
-          <legend>難易度選択</legend>
-          <label><input type="radio" name="difficulty" value=""> 制限なし</label>
-          <label><input type="radio" name="difficulty" value="1"> 1以下</label>
-          <label><input type="radio" name="difficulty" value="2"> 2以下</label>
-          <label><input type="radio" name="difficulty" value="3"> 3以下</label>
-          <label><input type="radio" name="difficulty" value="custom"> カスタム</label>
-          <div id="customDiffInputContainer" style="margin-top:10px;display:none;">
-            <input type="number" id="customDiffInput" min="1" max="5" placeholder="最大難易度">
-          </div>
-        </fieldset>
+      <!-- 時間 -->
+      <fieldset class="propose-group">
+        <legend>時間選択 (分)</legend>
+        <label><input type="radio" name="time" value=""> 制限なし</label>
+        <label><input type="radio" name="time" value="15"> 15分以内</label>
+        <label><input type="radio" name="time" value="30"> 30分以内</label>
+        <label><input type="radio" name="time" value="60"> 60分以内</label>
+        <label><input type="radio" name="time" value="custom"> カスタム</label>
+        <div id="customTimeInputContainer" style="margin-top:10px;display:none;">
+          <input type="number" id="customTimeInput" min="1" max="120" placeholder="最大時間">
+        </div>
+      </fieldset>
 
-        <!-- 時間 -->
-        <fieldset class="propose-group">
-          <legend>時間選択 (分)</legend>
-          <label><input type="radio" name="time" value=""> 制限なし</label>
-          <label><input type="radio" name="time" value="15"> 15分以内</label>
-          <label><input type="radio" name="time" value="30"> 30分以内</label>
-          <label><input type="radio" name="time" value="60"> 60分以内</label>
-          <label><input type="radio" name="time" value="custom"> カスタム</label>
-          <div id="customTimeInputContainer" style="margin-top:10px;display:none;">
-            <input type="number" id="customTimeInput" min="1" max="120" placeholder="最大時間">
-          </div>
-        </fieldset>
+      <!-- 費用 -->
+      <fieldset class="propose-group">
+        <legend>費用選択 (円)</legend>
+        <label><input type="radio" name="cost" value=""> 制限なし</label>
+        <label><input type="radio" name="cost" value="500"> ¥500以下</label>
+        <label><input type="radio" name="cost" value="1000"> ¥1000以下</label>
+        <label><input type="radio" name="cost" value="2000"> ¥2000以下</label>
+        <label><input type="radio" name="cost" value="custom"> カスタム</label>
+        <div id="customCostInputContainer" style="margin-top:10px;display:none;">
+          <input type="number" id="customCostInput" min="100" max="5000" placeholder="最大費用">
+        </div>
+      </fieldset>
+    </div>
 
-        <!-- 費用 -->
-        <fieldset class="propose-group">
-          <legend>費用選択 (円)</legend>
-          <label><input type="radio" name="cost" value=""> 制限なし</label>
-          <label><input type="radio" name="cost" value="500"> ¥500以下</label>
-          <label><input type="radio" name="cost" value="1000"> ¥1000以下</label>
-          <label><input type="radio" name="cost" value="2000"> ¥2000以下</label>
-          <label><input type="radio" name="cost" value="custom"> カスタム</label>
-          <div id="customCostInputContainer" style="margin-top:10px;display:none;">
-            <input type="number" id="customCostInput" min="100" max="5000" placeholder="最大費用">
-          </div>
-        </fieldset>
-      </div>
-
-      <!-- 右側：サマリー -->
-      <div id="summaryContainer" style="flex:1; border-left:2px solid #ddd; padding-left:15px; display:none;">
-        <h3>各食の設定内容</h3>
-        <div id="mealSummary"></div>
-      </div>
+    <!-- 右側：サマリーパネル -->
+    <div id="summaryPanel">
+      <h3>🍱 各食の設定</h3>
+      <div id="mealSummary"></div>
     </div>
   </div>
 </div>
-
 
 
     
@@ -1533,6 +1657,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     };
 })();
 
+// ===== レシピ提案モーダル制御 =====
 (function(){
   const proposeBtn = document.getElementById('proposeOpenBtn');
   const proposeModal = document.getElementById('proposeModal');
@@ -1541,18 +1666,17 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const mealRadios = document.querySelectorAll('input[name="meals"]');
   const customMealInputContainer = document.getElementById('customMealInputContainer');
   const customMealInput = document.getElementById('customMealInput');
-  const customMealConfirmBtn = document.getElementById('customMealConfirmBtn');
-  const modeSection = document.getElementById('modeSection');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const counterContainer = document.getElementById('counterContainer');
   const leftBtn = document.getElementById('leftBtn');
   const rightBtn = document.getElementById('rightBtn');
   const counterValue = document.getElementById('counterValue');
-  const summaryContainer = document.getElementById('summaryContainer');
-  const mealSummary = document.getElementById('mealSummary');
 
   const includeFishContainer = document.getElementById('includeFishContainer');
   const excludeFishContainer = document.getElementById('excludeFishContainer');
+  const includeRadios = document.getElementsByName('includeFishMode');
+  const excludeRadios = document.getElementsByName('excludeFishMode');
+
   const diffRadios = document.querySelectorAll('input[name="difficulty"]');
   const diffContainer = document.getElementById('customDiffInputContainer');
   const timeRadios = document.querySelectorAll('input[name="time"]');
@@ -1560,18 +1684,46 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   const costRadios = document.querySelectorAll('input[name="cost"]');
   const costContainer = document.getElementById('customCostInputContainer');
 
+  const modeSection = document.querySelector('fieldset:nth-of-type(2)');
   let p = 1;
   let currentCount = 1;
   let fishList = [];
-  const mealSettings = {};
+  let mealSettings = [];
+  let summaryPanel = null;
 
-  function createDefaultMealSetting() {
-    return { includeFish: [], excludeFish: [], difficulty: "", time: "", cost: "" };
+  // ====== 基本関数 ======
+  function createDefaultMealSetting(){
+    return {
+      include: new Set(),
+      exclude: new Set(),
+      difficulty: "",
+      time: "",
+      cost: ""
+    };
   }
 
-  // 🔹 モーダル開く
+  // ====== モーダル開く ======
   proposeBtn.addEventListener('click', async () => {
-    proposeModal.style.display = 'flex';
+    proposeModal.style.display = 'flex'; // ✅ 押した時だけ開く
+    await loadFishList();
+    initializeMealSettings();
+    renderFishCheckboxes();
+    createSummaryPanel();
+    renderSummary();
+  });
+
+  // ====== モーダル閉じる ======
+  function closeModal(){
+    proposeModal.style.display = 'none';
+    removeSummaryPanel();
+  }
+  closeProposeBtn.addEventListener('click', closeModal);
+  proposeModal.addEventListener('click', e => {
+    if (e.target === proposeModal) closeModal();
+  });
+
+  // ====== 魚リスト読み込み ======
+  async function loadFishList(){
     try {
       const res = await fetch("./docs/recipes.json");
       const json = await res.json();
@@ -1585,175 +1737,213 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
         }
       }
       fishList = Array.from(fishSet).sort();
-    } catch(e) { console.error("魚読み込みエラー:", e); }
-  });
-
-  closeProposeBtn.addEventListener('click', () => proposeModal.style.display = 'none');
-  proposeModal.addEventListener('click', e => { if (e.target === proposeModal) proposeModal.style.display = 'none'; });
-
-  // 🔹 食数設定
-  function updateMealDisplay(val, confirmed=false) {
-    const customVal = Number(customMealInput.value || 1);
-    const effectiveP = (val === 'custom') ? customVal : Number(val);
-    p = effectiveP;
-
-    if (p <= 1) {
-      modeSection.style.display = 'none';
-      counterContainer.style.display = 'none';
-      summaryContainer.style.display = 'none';
-    } else {
-      modeSection.style.display = 'block';
-    }
-
-    for (let i = 1; i <= p; i++) if (!mealSettings[i]) mealSettings[i] = createDefaultMealSetting();
+    } catch(e){ console.error("魚リスト読み込みエラー:", e); }
   }
 
-  mealRadios.forEach(r => r.addEventListener('change', () => {
-    customMealInputContainer.style.display = (r.value === 'custom') ? 'block' : 'none';
-    updateMealDisplay(r.value);
-  }));
-  customMealConfirmBtn.addEventListener('click', () => updateMealDisplay('custom', true));
-
-  // 🔹 モード切替
-  modeRadios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'each' && p > 1) {
-      counterContainer.style.display = 'block';
-      summaryContainer.style.display = 'block';
-      renderMealData();
-      renderSummary();
-    } else {
-      counterContainer.style.display = 'none';
-      summaryContainer.style.display = 'none';
-    }
-  }));
-
-  // 🔹 カウンター
-  leftBtn.addEventListener('click', () => {
-    if (currentCount > 1) {
-      saveCurrentMealData();
-      currentCount--;
-      counterValue.textContent = currentCount;
-      renderMealData();
-    }
-  });
-  rightBtn.addEventListener('click', () => {
-    if (currentCount < p) {
-      saveCurrentMealData();
-      currentCount++;
-      counterValue.textContent = currentCount;
-      renderMealData();
-    }
-  });
-
-  // 🔹 魚チェック生成
+  // ====== チェックボックス描画 ======
   function renderFishCheckboxes() {
     includeFishContainer.innerHTML = "";
     excludeFishContainer.innerHTML = "";
 
     fishList.forEach(f => {
-      const inc = document.createElement("label");
+      const incLabel = document.createElement("label");
       const incInput = document.createElement("input");
       incInput.type = "checkbox";
       incInput.className = "includeFish";
       incInput.value = f;
-      inc.append(incInput, " " + f);
-      incInput.addEventListener("change", saveCurrentMealData);
-      includeFishContainer.appendChild(inc);
+      incLabel.append(incInput, " " + f);
+      includeFishContainer.appendChild(incLabel);
 
-      const exc = document.createElement("label");
+      const excLabel = document.createElement("label");
       const excInput = document.createElement("input");
       excInput.type = "checkbox";
       excInput.className = "excludeFish";
       excInput.value = f;
-      exc.append(excInput, " " + f);
-      excInput.addEventListener("change", saveCurrentMealData);
-      excludeFishContainer.appendChild(exc);
+      excLabel.append(excInput, " " + f);
+      excludeFishContainer.appendChild(excLabel);
+
+      // --- 相互排他 ---
+      function syncExclusiveState(){
+        if (incInput.checked){
+          excInput.disabled = true;
+          excInput.checked = false;
+        } else if (excInput.checked){
+          incInput.disabled = true;
+          incInput.checked = false;
+        } else {
+          incInput.disabled = false;
+          excInput.disabled = false;
+        }
+      }
+      incInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
+      excInput.addEventListener("change", () => { syncExclusiveState(); saveCurrentMealData(); });
     });
   }
 
-  // 🔹 ラジオ（指定する／指定しない）
-  document.querySelectorAll('input[name="includeFishMode"]').forEach(radio => {
-    radio.addEventListener("change", e => {
-      if (e.target.value === "specify") {
-        includeFishContainer.style.display = "block";
-        if (fishList.length > 0) renderFishCheckboxes();
-      } else {
-        includeFishContainer.innerHTML = "";
-        includeFishContainer.style.display = "none";
-      }
-    });
-  });
-  document.querySelectorAll('input[name="excludeFishMode"]').forEach(radio => {
-    radio.addEventListener("change", e => {
-      if (e.target.value === "specify") {
-        excludeFishContainer.style.display = "block";
-        if (fishList.length > 0) renderFishCheckboxes();
-      } else {
-        excludeFishContainer.innerHTML = "";
-        excludeFishContainer.style.display = "none";
-      }
-    });
-  });
+  // ====== 食数管理 ======
+  function initializeMealSettings(){
+    mealSettings = [];
+    for(let i=1;i<=p;i++) mealSettings[i] = createDefaultMealSetting();
+  }
 
-  // 🔹 データ保存
-  function saveCurrentMealData() {
-    const idx = currentCount;
-    const inc = Array.from(document.querySelectorAll(".includeFish:checked")).map(i => i.value);
-    const exc = Array.from(document.querySelectorAll(".excludeFish:checked")).map(i => i.value);
-    const diff = document.querySelector('input[name="difficulty"]:checked')?.value || "";
-    const time = document.querySelector('input[name="time"]:checked')?.value || "";
-    const cost = document.querySelector('input[name="cost"]:checked')?.value || "";
-    mealSettings[idx] = { includeFish: inc, excludeFish: exc, difficulty: diff, time, cost };
+  function saveCurrentMealData(){
+    const data = mealSettings[currentCount];
+    data.include.clear();
+    data.exclude.clear();
+    document.querySelectorAll(".includeFish:checked").forEach(cb => data.include.add(cb.value));
+    document.querySelectorAll(".excludeFish:checked").forEach(cb => data.exclude.add(cb.value));
+    data.difficulty = document.querySelector('input[name="difficulty"]:checked')?.value || "";
+    data.time = document.querySelector('input[name="time"]:checked')?.value || "";
+    data.cost = document.querySelector('input[name="cost"]:checked')?.value || "";
     renderSummary();
   }
 
-  [...diffRadios, ...timeRadios, ...costRadios].forEach(el => el.addEventListener('change', saveCurrentMealData));
-
-  // 🔹 データ反映
-  function renderMealData() {
-    const idx = currentCount;
-    const d = mealSettings[idx] || createDefaultMealSetting();
-    document.querySelectorAll(".includeFish").forEach(cb => cb.checked = d.includeFish.includes(cb.value));
-    document.querySelectorAll(".excludeFish").forEach(cb => cb.checked = d.excludeFish.includes(cb.value));
-    diffRadios.forEach(r => r.checked = (r.value === d.difficulty));
-    timeRadios.forEach(r => r.checked = (r.value === d.time));
-    costRadios.forEach(r => r.checked = (r.value === d.cost));
+  // ====== サマリー制御 ======
+  function createSummaryPanel(){
+    if(summaryPanel) return;
+    summaryPanel = document.createElement("div");
+    summaryPanel.id = "summaryPanel";
+    document.body.appendChild(summaryPanel);
   }
-
-  // 🔹 サマリー描画（カード形式＋単位付き）
-  function renderSummary() {
-    let html = "";
-    for (let i = 1; i <= p; i++) {
-      const d = mealSettings[i] || createDefaultMealSetting();
-      const diffTxt = d.difficulty ? `Lv.${d.difficulty}` : "制限なし";
-      const timeTxt = d.time ? `${d.time}分以内` : "制限なし";
-      const costTxt = d.cost ? `¥${d.cost}以下` : "制限なし";
-
-      html += `
-        <div style="
-          background:#fff;
-          border:1px solid #ddd;
-          border-radius:10px;
-          padding:10px;
-          margin-bottom:10px;
-          box-shadow:1px 1px 4px rgba(0,0,0,0.1);
-        ">
-          <strong style="font-size:1.1em;">🍽 ${i}食目</strong><br>
-          <span style="color:#333;">🐟使う魚：</span>${d.includeFish.join(", ") || "なし"}<br>
-          <span style="color:#333;">🚫除外魚：</span>${d.excludeFish.join(", ") || "なし"}<br>
-          <span style="color:#333;">🎯難易度：</span>${diffTxt}<br>
-          <span style="color:#333;">⏱時間：</span>${timeTxt}<br>
-          <span style="color:#333;">💰費用：</span>${costTxt}
-        </div>`;
+  function removeSummaryPanel(){
+    if(summaryPanel){
+      summaryPanel.remove();
+      summaryPanel = null;
     }
-    mealSummary.innerHTML = html;
   }
 
-  // 🔹 カスタム欄制御
-  diffRadios.forEach(r => r.addEventListener('change', () => diffContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
-  timeRadios.forEach(r => r.addEventListener('change', () => timeContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
-  costRadios.forEach(r => r.addEventListener('change', () => costContainer.style.display = (r.value === 'custom') ? 'block' : 'none'));
+  function renderSummary(){
+    if(!summaryPanel) return;
+    summaryPanel.innerHTML = "";
+    mealSettings.forEach((m, i) => {
+      const card = document.createElement("div");
+      card.className = "summary-card";
+      card.innerHTML = `
+        <h3>${i}食目</h3>
+        <p><strong>使いたい魚:</strong> ${[...m.include].join("、") || "なし"}</p>
+        <p><strong>除外する魚:</strong> ${[...m.exclude].join("、") || "なし"}</p>
+        <p><strong>難易度:</strong> ${m.difficulty ? m.difficulty + " 以下" : "指定なし"}</p>
+        <p><strong>時間:</strong> ${m.time ? m.time + " 分以内" : "指定なし"}</p>
+        <p><strong>費用:</strong> ${m.cost ? "¥" + m.cost + " 以下" : "指定なし"}</p>
+      `;
+      if (i === currentCount) card.classList.add("active");
+      summaryPanel.appendChild(card);
+    });
+  }
+
+  // ====== 食数選択 ======
+  mealRadios.forEach(r => r.addEventListener('change', e=>{
+    if(e.target.value==='custom'){
+      customMealInputContainer.style.display='block';
+    }else{
+      customMealInputContainer.style.display='none';
+      updateMealDisplay(e.target.value);
+    }
+  }));
+
+  customMealInput.addEventListener('input', e=>{
+    const val = Number(e.target.value||1);
+    updateMealDisplay('custom', val);
+  });
+
+  function updateMealDisplay(val, customVal=null){
+    const newVal = val==='custom' ? Number(customVal||1) : Number(val);
+    p = newVal;
+    initializeMealSettings();
+    renderFishCheckboxes();
+    renderSummary();
+
+    if(p<=1){
+      modeSection.style.display='none';
+      counterContainer.style.display='none';
+      if(summaryPanel) summaryPanel.style.display='none';
+    }else{
+      modeSection.style.display='block';
+      if(summaryPanel) summaryPanel.style.display='block';
+    }
+  }
+
+  // ====== カスタム決定 ======
+  const customConfirmBtn = document.createElement("button");
+  customConfirmBtn.textContent = "決定";
+  customConfirmBtn.style.marginLeft = "10px";
+  customMealInputContainer.appendChild(customConfirmBtn);
+  customConfirmBtn.addEventListener("click", ()=>{
+    const val = Number(customMealInput.value||1);
+    updateMealDisplay('custom', val);
+  });
+
+  // ====== カウンター ======
+  modeRadios.forEach(r => r.addEventListener('change', e=>{
+    counterContainer.style.display = (e.target.value==='each') ? 'block' : 'none';
+  }));
+
+  leftBtn.addEventListener('click', ()=>{
+    if(currentCount>1){
+      saveCurrentMealData();
+      currentCount--;
+      counterValue.textContent=currentCount;
+      loadMealData();
+    }
+  });
+  rightBtn.addEventListener('click', ()=>{
+    if(currentCount<p){
+      saveCurrentMealData();
+      currentCount++;
+      counterValue.textContent=currentCount;
+      loadMealData();
+    }
+  });
+
+  function loadMealData(){
+    const data = mealSettings[currentCount];
+    document.querySelectorAll(".includeFish").forEach(cb => cb.checked = data.include.has(cb.value));
+    document.querySelectorAll(".excludeFish").forEach(cb => cb.checked = data.exclude.has(cb.value));
+    renderSummary();
+  }
+
+  // ====== 魚選択・排他制御 ======
+  includeRadios.forEach(radio => {
+    radio.addEventListener("change", e=>{
+      if(e.target.value==="specify"){
+        includeFishContainer.style.display="block";
+        renderFishCheckboxes();
+      }else{
+        includeFishContainer.style.display="none";
+        document.querySelectorAll(".includeFish").forEach(cb=>{
+          const pair=document.querySelector(`.excludeFish[value="${cb.value}"]`);
+          if(pair) pair.disabled=false;
+          cb.checked=false;
+        });
+        saveCurrentMealData();
+      }
+    });
+  });
+
+  excludeRadios.forEach(radio => {
+    radio.addEventListener("change", e=>{
+      if(e.target.value==="specify"){
+        excludeFishContainer.style.display="block";
+        renderFishCheckboxes();
+      }else{
+        excludeFishContainer.style.display="none";
+        document.querySelectorAll(".excludeFish").forEach(cb=>{
+          const pair=document.querySelector(`.includeFish[value="${cb.value}"]`);
+          if(pair) pair.disabled=false;
+          cb.checked=false;
+        });
+        saveCurrentMealData();
+      }
+    });
+  });
+
+  // ====== カスタム欄制御 ======
+  diffRadios.forEach(r=>r.addEventListener('change',()=>diffContainer.style.display=(r.value==='custom')?'block':'none'));
+  timeRadios.forEach(r=>r.addEventListener('change',()=>timeContainer.style.display=(r.value==='custom')?'block':'none'));
+  costRadios.forEach(r=>r.addEventListener('change',()=>costContainer.style.display=(r.value==='custom')?'block':'none'));
 })();
+
+
 
 
 
