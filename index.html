@@ -397,7 +397,7 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
 }
 
 /* --------------------------------------------------
-   モーダル本体（白いカード）
+   モーダル本体
    -------------------------------------------------- */
 .modal-content {
   background: #fff;
@@ -405,44 +405,50 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
   width: 96%;
   max-width: 1400px;
   max-height: 92vh;
-  overflow: hidden;
   box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  padding: 24px;
   display: flex;
+  flex-direction: row; /* 左右並列 */
+  justify-content: space-between;
   gap: 24px;
+  overflow: hidden;
+  padding: 0;
   position: relative;
 }
 
 /* --------------------------------------------------
-   左側（設定エリア）
+   左側（条件フォームエリア）
    -------------------------------------------------- */
 .modal-left {
   flex: 2;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  max-height: 88vh;
-  padding-right: 16px;
+  max-height: 92vh;
+  padding: 24px 20px 24px 24px;
   border-right: 1px solid #ddd;
+  box-sizing: border-box;
+  background: #fff;
 }
 
 /* --------------------------------------------------
-   右側サマリーパネル
+   右側（サマリーパネル）
    -------------------------------------------------- */
 #summaryPanel {
   flex: 1;
   background: #f9fafc;
   border-left: 2px solid #ddd;
-  padding: 16px 18px;
-  border-radius: 10px;
-  height: 88vh;
+  padding: 24px 20px;
+  border-radius: 0 14px 14px 0;
+  height: 92vh;
   overflow-y: auto;
-  position: sticky;
-  top: 20px;
   box-sizing: border-box;
 }
 
 #summaryPanel h3 {
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  font-size: 1.3rem;
+  font-weight: bold;
 }
 
 /* --- 複数食時カード形式 --- */
@@ -531,12 +537,21 @@ tbody tr:hover{background:rgba(43,108,176,0.03)}
     width: 100%;
     max-width: 720px;
   }
-  .modal-left { border-right: none; max-height: 60vh; }
-  #summaryPanel { position: relative; top: 0; height: auto; max-height: 40vh; }
+  .modal-left {
+    border-right: none;
+    max-height: 60vh;
+  }
+  #summaryPanel {
+    border-left: none;
+    border-top: 2px solid #ddd;
+    border-radius: 0 0 14px 14px;
+    height: auto;
+    max-height: 40vh;
+  }
 }
 
 /* --------------------------------------------------
-   小さなタッチ改善
+   入力補助
    -------------------------------------------------- */
 input[type="number"] { width: 80px; }
 label { display: inline-flex; align-items:center; gap:8px; margin-right:8px; }
